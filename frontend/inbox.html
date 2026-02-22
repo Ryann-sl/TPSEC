@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inbox - Cyber Security Learning Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .navbar {
+            background: var(--bg-secondary);
+            padding: var(--spacing-md);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .navbar-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-cyber);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .message-card {
+            margin-bottom: var(--spacing-md);
+            border-left: 3px solid var(--neon-cyan);
+        }
+
+        .message-card.unread {
+            border-left-color: var(--neon-green);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .message-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .encrypted-text {
+            background: rgba(0, 0, 0, 0.3);
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            word-break: break-all;
+            margin: var(--spacing-sm) 0;
+        }
+
+        .decrypt-form {
+            margin-top: var(--spacing-sm);
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">📨 Message Inbox</div>
+            <button class="btn btn-outline" onclick="navigateTo('dashboard.html')">← Back</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="text-center mb-3">Encrypted Messages</h1>
+        <p class="text-center text-secondary mb-4">Decrypt messages sent to you</p>
+
+        <div id="messages-container">
+            <div class="text-center">
+                <div class="loading-spinner"></div>
+                <p class="mt-2">Loading messages...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/inbox.js"></script>
+    <script src="js/matrix.js"></script>
+</body>
+
+</html>

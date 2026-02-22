@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Cyber Security Learning Platform</title>
+    <meta name="description" content="Cyber Security Learning Platform Dashboard">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .navbar {
+            background: var(--bg-secondary);
+            padding: var(--spacing-md);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .navbar-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-cyber);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .user-info {
+            color: var(--text-secondary);
+        }
+
+        .user-name {
+            color: var(--neon-cyan);
+            font-weight: 600;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .dashboard-title {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .dashboard-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .module-card {
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-icon {
+            font-size: 4rem;
+            margin-bottom: var(--spacing-md);
+            display: block;
+            transition: var(--transition-normal);
+        }
+
+        .module-card:hover .module-icon {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        .module-title {
+            font-size: 1.5rem;
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-primary);
+        }
+
+        .module-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .module-badge {
+            position: absolute;
+            top: var(--spacing-sm);
+            right: var(--spacing-sm);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">🔐 CyberSec Platform</div>
+            <div class="navbar-user">
+                <span class="user-info">
+                    Welcome, <span class="user-name" id="username-display"></span>
+                </span>
+                <button class="btn btn-outline" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Cyber Security Learning Platform</h1>
+            <p class="dashboard-subtitle">Master cryptography, understand attacks, and learn defense mechanisms</p>
+        </div>
+
+        <div class="grid grid-2">
+            <!-- Encryption Module -->
+            <div class="card module-card" onclick="navigateTo('encryption.html')">
+                <span class="badge badge-success module-badge">Active</span>
+                <span class="module-icon">🔑</span>
+                <h3 class="module-title">Encryption / Decryption</h3>
+                <p class="module-description">
+                    Learn classical cryptography algorithms: Caesar, Hill, and Playfair ciphers.
+                    Send encrypted messages to other users.
+                </p>
+            </div>
+
+            <!-- Attacks Module -->
+            <div class="card module-card" onclick="navigateTo('attacks.html')">
+                <span class="badge badge-warning module-badge">Active</span>
+                <span class="module-icon">⚔️</span>
+                <h3 class="module-title">Attack Simulations</h3>
+                <p class="module-description">
+                    Simulate real-world cyber attacks: Man-in-the-Middle, Dictionary attacks,
+                    and Brute Force techniques.
+                </p>
+            </div>
+
+            <!-- Defense Module -->
+            <div class="card module-card" onclick="navigateTo('defense.html')">
+                <span class="badge badge-info module-badge">Active</span>
+                <span class="module-icon">🛡️</span>
+                <h3 class="module-title">Defense Mechanisms</h3>
+                <p class="module-description">
+                    Learn how to defend against common attacks. Understand security best practices
+                    and protection strategies.
+                </p>
+            </div>
+
+            <!-- Inbox Module -->
+            <div class="card module-card" onclick="navigateTo('inbox.html')">
+                <span class="badge badge-success module-badge" id="inbox-badge">Inbox</span>
+                <span class="module-icon">📨</span>
+                <h3 class="module-title">Message Inbox</h3>
+                <p class="module-description">
+                    View and decrypt encrypted messages sent to you by other users.
+                    Practice decryption techniques.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/matrix.js"></script>
+</body>
+
+</html>

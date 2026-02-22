@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attacks - Cyber Security Learning Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/attacks.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .navbar {
+            background: var(--bg-secondary);
+            padding: var(--spacing-md);
+            border-bottom: 1px solid rgba(255, 51, 102, 0.2);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .navbar-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-danger);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .attack-card {
+            cursor: pointer;
+            border-color: rgba(255, 51, 102, 0.3);
+        }
+
+        .attack-card:hover {
+            border-color: var(--neon-red);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">⚔️ Attack Simulations</div>
+            <button class="btn btn-outline" onclick="navigateTo('dashboard.html')">← Back</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="text-center mb-3">Cyber Attack Simulations</h1>
+        <p class="text-center text-secondary mb-4">Learn how attacks work in a safe, educational environment</p>
+
+        <div class="grid grid-3">
+            <div class="card attack-card" onclick="showAttack('mitm')">
+                <h3>🎯 Man-in-the-Middle</h3>
+                <p>Intercept and modify encrypted communications</p>
+                <span class="badge badge-error mt-2">Advanced</span>
+            </div>
+            <div class="card attack-card" onclick="showAttack('dictionary')">
+                <h3>📚 Dictionary Attack</h3>
+                <p>Crack passwords using common word lists</p>
+                <span class="badge badge-warning mt-2">Intermediate</span>
+            </div>
+            <div class="card attack-card" onclick="showAttack('bruteforce')">
+                <h3>💥 Brute Force</h3>
+                <p>Try all possible keys to decrypt messages</p>
+                <span class="badge badge-error mt-2">Advanced</span>
+            </div>
+        </div>
+
+        <!-- MITM Interface -->
+        <div id="mitm-interface" class="hidden mt-4">
+            <div class="card">
+                <h2>🎯 Man-in-the-Middle Attack Simulation</h2>
+                <div id="mitm-form">
+                    <div class="mitm-animation-container">
+                        <div class="connection-line"></div>
+                        <div class="node">
+                            <div class="node-icon"><i class="ri-user-3-line"></i></div>
+                            <div class="node-label">Sender</div>
+                        </div>
+                        <div class="node">
+                            <div class="node-icon"><i class="ri-spy-line"></i></div>
+                            <div class="node-label">Attacker</div>
+                        </div>
+                        <div class="node">
+                            <div class="node-icon"><i class="ri-bank-line"></i></div>
+                            <div class="node-label">Receiver</div>
+                        </div>
+                        <div id="mitm-packet" class="packet"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Message to Send</label>
+                        <textarea id="mitm-message" class="form-textarea"
+                            placeholder="Enter message to send"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="startMITM()">🚀 Send Message</button>
+
+                    <div id="intercept-panel" class="hidden">
+                        <h3 class="text-danger mb-2"><i class="ri-alert-line"></i> Message Intercepted!</h3>
+                        <p class="text-secondary mb-3">You have intercepted the message. You can modify it before
+                            forwarding.</p>
+
+                        <div class="form-group">
+                            <label class="form-label">Intercepted Message Content</label>
+                            <textarea id="intercepted-text" class="form-textarea"></textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-danger" onclick="forwardMessage()">📤 Forward to Receiver</button>
+                            <button class="btn btn-outline" onclick="cancelMITM()">❌ Drop Packet</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="mitm-results" class="mt-3"></div>
+            </div>
+        </div>
+
+        <!-- Dictionary Interface -->
+        <div id="dictionary-interface" class="hidden mt-4">
+            <div class="card">
+                <h2>📚 Dictionary Attack Simulation</h2>
+                <div id="dictionary-form">
+                    <div class="form-group">
+                        <label class="form-label">Target Password</label>
+                        <input type="text" id="dict-password" class="form-input" placeholder="Enter password to test">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Custom Wordlist (Optional)</label>
+                        <input type="file" id="dict-file" class="form-input" accept=".txt">
+                        <div class="form-text">Upload a .txt file with one password per line</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Attempts</label>
+                        <input type="number" id="dict-attempts" class="form-input" value="50">
+                    </div>
+                    <button class="btn btn-danger" onclick="runDictionary()">📚 Start Attack</button>
+                </div>
+                <div id="dictionary-results" class="mt-3"></div>
+            </div>
+        </div>
+
+        <!-- Brute Force Interface -->
+        <div id="bruteforce-interface" class="hidden mt-4">
+            <div class="card">
+                <h2>💥 Brute Force Attack Simulation</h2>
+                <div id="bruteforce-form">
+                    <div class="form-group">
+                        <label class="form-label">Encrypted Message (Caesar Cipher)</label>
+                        <textarea id="brute-message" class="form-textarea"
+                            placeholder="Enter Caesar encrypted message"></textarea>
+                    </div>
+                    <button class="btn btn-danger" onclick="runBruteForce()">💥 Crack Encryption</button>
+                </div>
+                <div id="bruteforce-results" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/attacks.js"></script>
+    <script src="js/matrix.js"></script>
+</body>
+
+</html>

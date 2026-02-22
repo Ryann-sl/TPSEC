@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Cyber Security Learning Platform</title>
+    <meta name="description" content="Create an account on the Cyber Security Learning Platform">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-lg);
+        }
+
+        .auth-card {
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .auth-logo {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-sm);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            }
+
+            50% {
+                text-shadow: 0 0 40px rgba(0, 255, 136, 0.8);
+            }
+        }
+
+        .auth-title {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: var(--spacing-lg);
+            color: var(--text-secondary);
+        }
+
+        .auth-link {
+            color: var(--neon-cyan);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .auth-link:hover {
+            color: var(--neon-purple);
+        }
+
+        .password-requirements {
+            margin-top: var(--spacing-xs);
+            padding: var(--spacing-sm);
+            background: rgba(0, 240, 255, 0.05);
+            border-left: 3px solid var(--neon-cyan);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+        }
+
+        .password-requirements ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .password-requirements li {
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .password-requirements li::before {
+            content: '• ';
+            color: var(--neon-cyan);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-card card">
+            <div class="auth-header">
+                <div class="auth-logo">🛡️</div>
+                <h1 class="auth-title">Create Account</h1>
+                <p class="auth-subtitle">Join the Cyber Security Learning Platform</p>
+            </div>
+
+            <div id="alert-container"></div>
+
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" id="username" class="form-input" placeholder="Choose a username" required
+                        minlength="3" autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="Choose a strong password"
+                        required minlength="6" autocomplete="new-password">
+                    <div class="password-requirements">
+                        <ul>
+                            <li>At least 6 characters long</li>
+                            <li>Mix of letters and numbers recommended</li>
+                            <li>Avoid common passwords</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password" class="form-label">Confirm Password</label>
+                    <input type="password" id="confirm-password" class="form-input" placeholder="Re-enter your password"
+                        required autocomplete="new-password">
+                </div>
+
+                <button type="submit" class="btn btn-success" style="width: 100%;">
+                    Create Account
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Already have an account?
+                <a href="index.html" class="auth-link">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // Initialize register form
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match', 'error');
+                return;
+            }
+
+            await register(username, password);
+        });
+    </script>
+</body>
+
+</html>

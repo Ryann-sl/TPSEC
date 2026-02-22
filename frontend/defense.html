@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defense - Cyber Security Learning Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .navbar {
+            background: var(--bg-secondary);
+            padding: var(--spacing-md);
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .navbar-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-success);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .defense-section {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .defense-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .defense-list li {
+            padding: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+            background: rgba(0, 255, 136, 0.05);
+            border-left: 3px solid var(--neon-green);
+            border-radius: var(--radius-sm);
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">🛡️ Defense Mechanisms</div>
+            <button class="btn btn-outline" onclick="navigateTo('dashboard.html')">← Back</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="text-center mb-3">Cyber Defense Mechanisms</h1>
+        <p class="text-center text-secondary mb-4">Learn how to protect against common cyber attacks</p>
+
+        <div class="defense-section">
+            <div class="card">
+                <h2>🛡️ Defending Against MITM Attacks</h2>
+                <ul class="defense-list">
+                    <li><strong>Use TLS/SSL:</strong> Encrypt all communications with HTTPS</li>
+                    <li><strong>Certificate Verification:</strong> Always verify SSL certificates</li>
+                    <li><strong>VPN Usage:</strong> Use VPN on public networks</li>
+                    <li><strong>Certificate Pinning:</strong> Implement certificate pinning in apps</li>
+                    <li><strong>End-to-End Encryption:</strong> Use E2EE for sensitive communications</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="defense-section">
+            <div class="card">
+                <h2>🔒 Defending Against Dictionary Attacks</h2>
+                <ul class="defense-list">
+                    <li><strong>Strong Passwords:</strong> Use 12+ character passwords with mixed case, numbers, symbols
+                    </li>
+                    <li><strong>Password Managers:</strong> Generate and store unique passwords</li>
+                    <li><strong>Account Lockout:</strong> Implement lockout after failed attempts</li>
+                    <li><strong>Rate Limiting:</strong> Limit login attempts per time period</li>
+                    <li><strong>Multi-Factor Authentication:</strong> Require additional verification</li>
+                    <li><strong>Password Hashing:</strong> Use bcrypt or Argon2 for password storage</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="defense-section">
+            <div class="card">
+                <h2>🔐 Defending Against Brute Force Attacks</h2>
+                <ul class="defense-list">
+                    <li><strong>Large Key Spaces:</strong> Use modern encryption (AES-256)</li>
+                    <li><strong>Long Keys:</strong> Use 128+ bit keys minimum</li>
+                    <li><strong>Rate Limiting:</strong> Slow down attack attempts</li>
+                    <li><strong>CAPTCHA:</strong> Prevent automated attacks</li>
+                    <li><strong>Monitoring:</strong> Detect and block suspicious activity</li>
+                    <li><strong>Modern Algorithms:</strong> Never use Caesar or simple ciphers for real security</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="defense-section">
+            <div class="card">
+                <h2>✅ Security Best Practices</h2>
+                <ul class="defense-list">
+                    <li><strong>Defense in Depth:</strong> Use multiple layers of security</li>
+                    <li><strong>Least Privilege:</strong> Grant minimum necessary permissions</li>
+                    <li><strong>Regular Updates:</strong> Keep systems and software updated</li>
+                    <li><strong>Security Audits:</strong> Regularly review security measures</li>
+                    <li><strong>User Education:</strong> Train users on security awareness</li>
+                    <li><strong>Incident Response:</strong> Have a plan for security breaches</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            requireAuth();
+        });
+    </script>
+</body>
+
+</html>
