@@ -1,176 +1,157 @@
 """
-Playfair Cipher Implementation
-A digraph substitution cipher using a 5x5 key matrix
+Playfair Cipher Implementation (Simple Educational Version)
+Uses a 5x5 Grid to encrypt pairs of letters (Digraphs).
 """
 
 class PlayfairCipher:
-    """Playfair cipher encryption and decryption"""
+    """A clean implementation of the Playfair Cipher for student study."""
     
     @staticmethod
     def prepare_key(keyword):
         """
-        Create 5x5 key matrix from keyword
-        
-        Args:
-            keyword (str): Keyword for the cipher
-            
-        Returns:
-            list: 5x5 matrix
+        STEP 1: Create the 5x5 Key Matrix.
+        1. Clean keyword (Upper, remove J).
+        2. Fill matrix with unique keyword letters.
+        3. Fill remaining cells with the rest of the alphabet.
         """
-        # Remove duplicates and convert to uppercase
         keyword = keyword.upper().replace('J', 'I')
-        seen = set()
-        key_chars = []
+        alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ" # J is merged with I
         
-        for char in keyword:
-            if char.isalpha() and char not in seen:
-                seen.add(char)
-                key_chars.append(char)
+        # Build list of unique characters starting with keyword
+        unique_chars = []
+        for char in (keyword + alphabet):
+            if char not in unique_chars and char.isalpha():
+                unique_chars.append(char)
         
-        # Add remaining letters
-        for char in "ABCDEFGHIKLMNOPQRSTUVWXYZ":  # No J
-            if char not in seen:
-                key_chars.append(char)
-        
-        # Create 5x5 matrix
+        # Convert the flat list into a 5x5 matrix (list of lists)
         matrix = []
-        for i in range(5):
-            matrix.append(key_chars[i*5:(i+1)*5])
-        
+        for i in range(0, 25, 5):
+            matrix.append(unique_chars[i:i+5])
         return matrix
-    
+
     @staticmethod
     def find_position(matrix, char):
-        """Find position of character in matrix"""
-        for i, row in enumerate(matrix):
-            for j, c in enumerate(row):
-                if c == char:
-                    return i, j
+        """Find Row and Column index of a character in the grid."""
+        for r in range(5):
+            for c in range(5):
+                if matrix[r][c] == char:
+                    return r, c
         return None, None
-    
+
     @staticmethod
     def prepare_text(text):
         """
-        Prepare text for encryption
-        - Remove spaces and convert to uppercase
-        - Replace J with I
-        - Split into digraphs
-        - Add X between duplicate letters
+        STEP 2: Prepare the text into pairs (Digraphs).
+        1. Replace J with I.
+        2. Insert fillers (X, Z, Q) between repeat letters.
+        3. Add a filler if total length is odd.
         """
         text = text.upper().replace('J', 'I').replace(' ', '')
+        fillers = ['X', 'Z', 'Q']
+        f_idx = 0
         
-        # Split into pairs
         pairs = []
         i = 0
         while i < len(text):
+            char1 = text[i]
+            
+            # Case 1: Last character left alone (Add filler)
             if i == len(text) - 1:
-                # Add X to last character if odd length
-                pairs.append(text[i] + 'X')
+                filler = fillers[f_idx % 3]
+                if char1 == filler: filler = fillers[(f_idx + 1) % 3]
+                pairs.append(char1 + filler)
                 i += 1
-            elif text[i] == text[i+1]:
-                # Add X between duplicates
-                pairs.append(text[i] + 'X')
+            
+            # Case 2: Next character is the same (Add filler in middle)
+            elif char1 == text[i+1]:
+                filler = fillers[f_idx % 3]
+                if char1 == filler: filler = fillers[(f_idx + 1) % 3]
+                pairs.append(char1 + filler)
+                f_idx += 1
                 i += 1
+            
+            # Case 3: Normal pair
             else:
-                pairs.append(text[i:i+2])
+                pairs.append(char1 + text[i+1])
                 i += 2
-        
         return pairs
-    
+
     @staticmethod
-    def encrypt(plaintext, keyword):
+    def encrypt(text, keyword):
         """
-        Encrypt plaintext using Playfair cipher
-        
-        Args:
-            plaintext (str): Text to encrypt
-            keyword (str): Keyword for the cipher
-            
-        Returns:
-            str: Encrypted text
+        STEP 3: Apply the 3 Rules of Playfair.
         """
         if not keyword:
             raise ValueError("Keyword is required")
         
         matrix = PlayfairCipher.prepare_key(keyword)
-        pairs = PlayfairCipher.prepare_text(plaintext)
+        pairs = PlayfairCipher.prepare_text(text)
+        result = ""
         
-        encrypted = ""
-        
-        for pair in pairs:
-            row1, col1 = PlayfairCipher.find_position(matrix, pair[0])
-            row2, col2 = PlayfairCipher.find_position(matrix, pair[1])
+        for p in pairs:
+            r1, c1 = PlayfairCipher.find_position(matrix, p[0])
+            r2, c2 = PlayfairCipher.find_position(matrix, p[1])
             
-            if row1 == row2:
-                # Same row: shift right
-                encrypted += matrix[row1][(col1 + 1) % 5]
-                encrypted += matrix[row2][(col2 + 1) % 5]
-            elif col1 == col2:
-                # Same column: shift down
-                encrypted += matrix[(row1 + 1) % 5][col1]
-                encrypted += matrix[(row2 + 1) % 5][col2]
-            else:
-                # Rectangle: swap columns
-                encrypted += matrix[row1][col2]
-                encrypted += matrix[row2][col1]
-        
-        return encrypted
-    
-    @staticmethod
-    def decrypt(ciphertext, keyword):
-        """
-        Decrypt ciphertext using Playfair cipher
-        
-        Args:
-            ciphertext (str): Text to decrypt
-            keyword (str): Keyword for the cipher
+            # RULE 1: SAME ROW -> Shift Right
+            if r1 == r2:
+                result += matrix[r1][(c1 + 1) % 5]
+                result += matrix[r2][(c2 + 1) % 5]
             
-        Returns:
-            str: Decrypted text
-        """
-        if not keyword:
-            raise ValueError("Keyword is required")
-        
-        matrix = PlayfairCipher.prepare_key(keyword)
-        ciphertext = ciphertext.upper().replace(' ', '')
-        
-        # Split into pairs
-        pairs = [ciphertext[i:i+2] for i in range(0, len(ciphertext), 2)]
-        
-        decrypted = ""
-        
-        for pair in pairs:
-            if len(pair) < 2:
-                continue
+            # RULE 2: SAME COLUMN -> Shift Down
+            elif c1 == c2:
+                result += matrix[(r1 + 1) % 5][c1]
+                result += matrix[(r2 + 1) % 5][c2]
                 
-            row1, col1 = PlayfairCipher.find_position(matrix, pair[0])
-            row2, col2 = PlayfairCipher.find_position(matrix, pair[1])
-            
-            if row1 == row2:
-                # Same row: shift left
-                decrypted += matrix[row1][(col1 - 1) % 5]
-                decrypted += matrix[row2][(col2 - 1) % 5]
-            elif col1 == col2:
-                # Same column: shift up
-                decrypted += matrix[(row1 - 1) % 5][col1]
-                decrypted += matrix[(row2 - 1) % 5][col2]
+            # RULE 3: RECTANGLE -> Swap Columns
             else:
-                # Rectangle: swap columns
-                decrypted += matrix[row1][col2]
-                decrypted += matrix[row2][col1]
+                result += matrix[r1][c2]
+                result += matrix[r2][c1]
+        return result
+
+    @staticmethod
+    def decrypt(text, keyword):
+        """
+        STEP 4: Reverse the 3 Rules.
+        """
+        if not keyword:
+            raise ValueError("Keyword is required")
         
-        return decrypted
+        matrix = PlayfairCipher.prepare_key(keyword)
+        # Split ciphertext into fixed digraphs (no extra prep needed)
+        text = text.upper().replace(' ', '') # Ensure text is clean before pairing
+        pairs = [text[i:i+2] for i in range(0, len(text), 2)]
+        result = ""
+        
+        for p in pairs:
+            if len(p) < 2: continue # Handle potential odd length ciphertext, though encrypt ensures even
+            r1, c1 = PlayfairCipher.find_position(matrix, p[0])
+            r2, c2 = PlayfairCipher.find_position(matrix, p[1])
+            
+            # RULE 1: SAME ROW -> Shift Left
+            if r1 == r2:
+                result += matrix[r1][(c1 - 1) % 5]
+                result += matrix[r2][(c2 - 1) % 5]
+            
+            # RULE 2: SAME COLUMN -> Shift Up
+            elif c1 == c2:
+                result += matrix[(r1 - 1) % 5][c1]
+                result += matrix[(r2 - 1) % 5][c2]
+                
+            # RULE 3: RECTANGLE -> Swap Columns
+            else:
+                result += matrix[r1][c2]
+                result += matrix[r2][c1]
+        return result
 
-
-# Example usage
 if __name__ == "__main__":
-    plaintext = "Hello World"
-    keyword = "SECRET"
+    key = "SECRET"
+    msg = "HELLO"
     
-    encrypted = PlayfairCipher.encrypt(plaintext, keyword)
-    print(f"Plaintext: {plaintext}")
-    print(f"Keyword: {keyword}")
-    print(f"Encrypted: {encrypted}")
+    print(f"Plaintext: {msg}")
+    print(f"Keyword: {key}")
     
-    decrypted = PlayfairCipher.decrypt(encrypted, keyword)
-    print(f"Decrypted: {decrypted}")
+    enc = PlayfairCipher.encrypt(msg, key)
+    print(f"Playfair Encrypted: {enc}")
+    
+    dec = PlayfairCipher.decrypt(enc, key)
+    print(f"Playfair Decrypted: {dec}")

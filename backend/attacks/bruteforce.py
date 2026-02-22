@@ -33,12 +33,13 @@ class BruteForceAttack:
             if logs_callback:
                 logs_callback(message)
         
-        log("🎯 Brute Force Attack on Caesar Cipher")
+        log("🎯 Caesar Cipher Brute Force Simulation")
         log(f"🔍 Ciphertext: {ciphertext}")
-        log(f"🎲 Trying all {max_attempts} possible shifts...\n")
+        log("🎲 Key Space Analysis: The Caesar cipher only has 25 useful keys.")
+        log("🚀 Starting attack: Trying shifts 1 to 25...\n")
         
-        # Try all possible shifts
-        for shift in range(max_attempts):
+        # Try shifts 1 to 25 (Shift 0/26 is the original text)
+        for shift in range(1, 26):
             time.sleep(0.05)
             
             # Decrypt with this shift
@@ -46,6 +47,7 @@ class BruteForceAttack:
             for char in ciphertext:
                 if char.isalpha():
                     ascii_offset = ord('A') if char.isupper() else ord('a')
+                    # Shift left for decryption
                     shifted = (ord(char) - ascii_offset - shift) % 26
                     decrypted += chr(shifted + ascii_offset)
                 else:
@@ -56,7 +58,10 @@ class BruteForceAttack:
                 'text': decrypted
             })
             
-            log(f"Shift {shift:2d}: {decrypted}")
+            log(f"Attempt {shift:2d}: Results in '{decrypted}'")
+        
+        log(f"\n✅ SYSTEM CHECK: 25 attempts completed.")
+        log("💡 OBSERVATION: One of the 25 results above MUST be the original message.")
         
         # Also check if it's just reversed text
         reversed_text = ciphertext[::-1]

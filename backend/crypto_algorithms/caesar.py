@@ -1,117 +1,80 @@
 """
-Caesar Cipher Implementation
-A simple substitution cipher that shifts letters by a fixed number
+Caesar Cipher Implementation (Simple Educational Version)
+Follows the requirements for the PFE Security Platform.
 """
 
 class CaesarCipher:
-    """Caesar cipher encryption and decryption"""
+    """A clean, simple implementation of the Caesar Cipher for students."""
     
     @staticmethod
-    def encrypt(plaintext, shift):
+    def encrypt(text, shift):
         """
-        Encrypt plaintext using Caesar cipher
-        
-        Args:
-            plaintext (str): Text to encrypt
-            shift (int): Number of positions to shift
+        ENCRYPTION: Shift letters FORWARD (P + K) mod 26
+        """
+        # Normalize and detect weak keys
+        normalized_shift = shift % 26
+        if normalized_shift == 0:
+            raise ValueError("Weak Key Detected: A shift of 0 (or 26) provides no encryption.")
             
-        Returns:
-            str: Encrypted text
-        """
-        if not isinstance(shift, int):
-            try:
-                shift = int(shift)
-            except:
-                raise ValueError("Shift must be an integer")
-        
-        # Validate shift range
-        if shift < 0 or shift > 26:
-            raise ValueError("Shift must be between 0 and 26")
-        
-        # Normalize shift to 0-25 range
-        shift = shift % 26
-        
-        encrypted = ""
-        
-        for char in plaintext:
-            if char.isalpha():
-                # Determine if uppercase or lowercase
-                ascii_offset = ord('A') if char.isupper() else ord('a')
-                
-                # Shift character
-                shifted = (ord(char) - ascii_offset + shift) % 26
-                encrypted += chr(shifted + ascii_offset)
+        result = ""
+        for char in text:
+            if char.isupper():
+                # (Current Position + Shift) wrapped at 26
+                new_pos = (ord(char) - ord('A') + normalized_shift) % 26
+                result += chr(new_pos + ord('A'))
+            elif char.islower():
+                new_pos = (ord(char) - ord('a') + normalized_shift) % 26
+                result += chr(new_pos + ord('a'))
             else:
-                # Keep non-alphabetic characters unchanged
-                encrypted += char
-        
-        return encrypted
-    
+                result += char
+        return result
+
     @staticmethod
-    def decrypt(ciphertext, shift):
+    def decrypt(text, shift):
         """
-        Decrypt ciphertext using Caesar cipher
-        
-        Args:
-            ciphertext (str): Text to decrypt
-            shift (int): Number of positions to shift back
-            
-        Returns:
-            str: Decrypted text
+        DECRYPTION: Shift letters BACKWARD (C - K) mod 26
         """
-        if not isinstance(shift, int):
-            try:
-                shift = int(shift)
-            except:
-                raise ValueError("Shift must be an integer")
-        
-        # Validate shift range
-        if shift < 0 or shift > 26:
-            raise ValueError("Shift must be between 0 and 26")
+        # Normalize and detect weak keys
+        normalized_shift = shift % 26
+        if normalized_shift == 0:
+            raise ValueError("Weak Key Detected: A shift of 0 (or 26) provides no encryption.")
             
-        # Decryption is encryption with negative shift (normalized)
-        return CaesarCipher.encrypt(ciphertext, (26 - shift) % 26)
-    
+        result = ""
+        for char in text:
+            if char.isupper():
+                # (Current Position - Shift) wrapped at 26
+                new_pos = (ord(char) - ord('A') - normalized_shift) % 26
+                result += chr(new_pos + ord('A'))
+            elif char.islower():
+                new_pos = (ord(char) - ord('a') - normalized_shift) % 26
+                result += chr(new_pos + ord('a'))
+            else:
+                result += char
+        return result
+
     @staticmethod
-    def brute_force(ciphertext):
+    def brute_force(text):
         """
-        Attempt all possible shifts (brute force attack)
-        
-        Args:
-            ciphertext (str): Text to decrypt
-            
-        Returns:
-            list: All possible decryptions with their shifts
+        Try all 25 possible shifts to find the message.
         """
-        results = []
-        
-        for shift in range(26):
-            decrypted = CaesarCipher.decrypt(ciphertext, shift)
-            results.append({
-                'shift': shift,
-                'text': decrypted
+        possible_results = []
+        for s in range(1, 26):
+            possible_results.append({
+                'shift': s,
+                'result': CaesarCipher.decrypt(text, s)
             })
-        
-        return results
+        return possible_results
 
-
-# Example usage and testing
+# Simple Test Cases (Matching the User Table)
 if __name__ == "__main__":
-    # Test encryption
-    plaintext = "Hello World"
-    shift = 3
+    # Test 1: Wrap-around
+    print(f"XYZ + 3 = {CaesarCipher.encrypt('XYZ', 3)}") # Expected: ABC
     
-    encrypted = CaesarCipher.encrypt(plaintext, shift)
-    print(f"Plaintext: {plaintext}")
-    print(f"Shift: {shift}")
-    print(f"Encrypted: {encrypted}")
+    # Test 2: Case sensitivity
+    print(f"Hello + 3 = {CaesarCipher.encrypt('Hello', 3)}") # Expected: Khoor
     
-    # Test decryption
-    decrypted = CaesarCipher.decrypt(encrypted, shift)
-    print(f"Decrypted: {decrypted}")
+    # Test 3: Non-alphabet chars
+    print(f"H! + 3 = {CaesarCipher.encrypt('H!', 3)}") # Expected: K!
     
-    # Test brute force
-    print("\nBrute Force Attack:")
-    results = CaesarCipher.brute_force(encrypted)
-    for result in results[:5]:  # Show first 5
-        print(f"Shift {result['shift']}: {result['text']}")
+    # Test 4: Weak Keys
+    print(f"HELLO + 26 = {CaesarCipher.encrypt('HELLO', 26)}") # Expected: HELLO (Weak Key)
