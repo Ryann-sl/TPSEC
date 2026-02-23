@@ -327,6 +327,10 @@ a:hover {
     background: rgba(255, 255, 255, 0.08);
 }
 
+.form-select option {
+    color: #000;
+}
+
 .form-textarea {
     resize: vertical;
     min-height: 100px;

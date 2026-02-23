@@ -2,14 +2,14 @@
  * Encryption JavaScript
  */
 
-let currentAlgorithm = 'playfair';
+let currentAlgorithm = 'caesar';
 let isLocked = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!requireAuth()) return;
     loadUsers();
     setupForms();
-    selectAlgorithm('playfair');
+    selectAlgorithm('caesar');
 });
 
 function selectAlgorithm(algorithm) {
@@ -67,6 +67,15 @@ function selectAlgorithm(algorithm) {
         document.getElementById('key-decrypt').placeholder = keyPlaceholders[algorithm];
         document.getElementById('key-encrypt').value = keyPlaceholders[algorithm];
         document.getElementById('key-decrypt').value = keyPlaceholders[algorithm];
+
+        // Toggle Direction UI for Caesar
+        if (algorithm === 'caesar') {
+            document.getElementById('direction-encrypt').classList.remove('hidden');
+            document.getElementById('direction-decrypt').classList.remove('hidden');
+        } else {
+            document.getElementById('direction-encrypt').classList.add('hidden');
+            document.getElementById('direction-decrypt').classList.add('hidden');
+        }
 
         // Show Playfair 5x5 matrix visualizer
         if (algorithm === 'playfair') {
@@ -180,11 +189,14 @@ async function encryptMessage() {
     }
 
     try {
+        const direction = currentAlgorithm === 'caesar' ? document.getElementById('direction-encrypt').value : 'none';
+
         const data = await apiRequest(`/encrypt/${currentAlgorithm}`, {
             method: 'POST',
             body: JSON.stringify({
                 plaintext,
                 shift: currentAlgorithm === 'caesar' ? parseInt(key) : undefined,
+                direction: currentAlgorithm === 'caesar' ? direction : undefined,
                 key: currentAlgorithm !== 'caesar' ? key : undefined
             })
         });
@@ -237,6 +249,7 @@ async function decryptMessage() {
             body: JSON.stringify({
                 ciphertext,
                 shift: currentAlgorithm === 'caesar' ? parseInt(key) : undefined,
+                direction: currentAlgorithm === 'caesar' ? document.getElementById('direction-decrypt').value : undefined,
                 key: currentAlgorithm !== 'caesar' ? key : undefined
             })
         });

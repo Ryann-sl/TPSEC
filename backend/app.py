@@ -132,15 +132,23 @@ def encrypt_caesar():
     
     try:
         plaintext = data.get('plaintext', '')
-        shift = int(data.get('shift', 3))
+        shift = data.get('shift', 3)
+        direction = data.get('direction', 'right')
         
-        encrypted = CaesarCipher.encrypt(plaintext, shift)
+        # Ensure shift is integer
+        try:
+            shift = int(shift)
+        except:
+            shift = 3
+            
+        encrypted = CaesarCipher.encrypt(plaintext, shift, direction)
         
         return jsonify({
             'success': True,
             'encrypted': encrypted,
             'algorithm': 'caesar',
-            'key': shift
+            'key': shift,
+            'direction': direction
         }), 200
         
     except Exception as e:
@@ -157,13 +165,15 @@ def decrypt_caesar():
     try:
         ciphertext = data.get('ciphertext', '')
         shift = int(data.get('shift', 3))
+        direction = data.get('direction', 'right')
         
-        decrypted = CaesarCipher.decrypt(ciphertext, shift)
+        decrypted = CaesarCipher.decrypt(ciphertext, shift, direction)
         
         return jsonify({
             'success': True,
             'decrypted': decrypted,
-            'algorithm': 'caesar'
+            'algorithm': 'caesar',
+            'direction': direction
         }), 200
         
     except Exception as e:

@@ -33,6 +33,7 @@
             background: var(--gradient-cyber);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .algorithm-selector {
@@ -160,7 +161,14 @@
                     </div>
                     <div class="form-group" id="key-group-encrypt">
                         <label class="form-label" id="key-label-encrypt">Shift</label>
-                        <input type="text" id="key-encrypt" class="form-input" placeholder="3" value="3" required>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="key-encrypt" class="form-input" placeholder="3" value="3" min="1"
+                                required>
+                            <select id="direction-encrypt" class="form-select" style="width: auto;">
+                                <option value="right">Right →</option>
+                                <option value="left">← Left</option>
+                            </select>
+                        </div>
 
                         <!-- Hill Size Selector -->
                         <div id="hill-size-encrypt" class="mb-2 hidden">
@@ -202,7 +210,14 @@
                     </div>
                     <div class="form-group" id="key-group-decrypt">
                         <label class="form-label" id="key-label-decrypt">Shift</label>
-                        <input type="text" id="key-decrypt" class="form-input" placeholder="3" value="3" required>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="key-decrypt" class="form-input" placeholder="3" value="3" min="1"
+                                required>
+                            <select id="direction-decrypt" class="form-select" style="width: auto;">
+                                <option value="right">Right →</option>
+                                <option value="left">← Left</option>
+                            </select>
+                        </div>
 
                         <!-- Hill Size Selector -->
                         <div id="hill-size-decrypt" class="mb-2 hidden">
@@ -242,10 +257,10 @@
         </div>
     </div>
 
-    <script src="js/auth.js"></script>
-    <script src="js/encryption.js"></script>
-    <script src="js/matrix.js"></script>
-    <script src="js/playfair.js"></script>
+    <script src="js/auth.js?v=2"></script>
+    <script src="js/encryption.js?v=2"></script>
+    <script src="js/matrix.js?v=1"></script>
+    <script src="js/playfair.js?v=1"></script>
 </body>
 
 </html>
