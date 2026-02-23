@@ -68,15 +68,6 @@ function selectAlgorithm(algorithm) {
         document.getElementById('key-encrypt').value = keyPlaceholders[algorithm];
         document.getElementById('key-decrypt').value = keyPlaceholders[algorithm];
 
-        // Toggle Direction UI for Caesar
-        if (algorithm === 'caesar') {
-            document.getElementById('direction-encrypt').classList.remove('hidden');
-            document.getElementById('direction-decrypt').classList.remove('hidden');
-        } else {
-            document.getElementById('direction-encrypt').classList.add('hidden');
-            document.getElementById('direction-decrypt').classList.add('hidden');
-        }
-
         // Set input types: number for caesar, text for others
         const inputType = algorithm === 'caesar' ? 'number' : 'text';
         document.getElementById('key-encrypt').type = inputType;
@@ -96,6 +87,15 @@ function selectAlgorithm(algorithm) {
         // Ensure message textareas are always visible
         document.getElementById('plaintext').closest('.form-group').style.display = 'block';
         document.getElementById('ciphertext').closest('.form-group').style.display = 'block';
+    }
+
+    // Toggle Direction UI - Only for Caesar
+    if (algorithm === 'caesar') {
+        document.getElementById('direction-encrypt').classList.remove('hidden');
+        document.getElementById('direction-decrypt').classList.remove('hidden');
+    } else {
+        document.getElementById('direction-encrypt').classList.add('hidden');
+        document.getElementById('direction-decrypt').classList.add('hidden');
     }
 }
 
