@@ -71,15 +71,17 @@ function selectAlgorithm(algorithm) {
         // Show Playfair 5x5 matrix visualizer
         if (algorithm === 'playfair') {
             initPlayfairMatrix();
-            // Hide the message textareas for Playfair as requested
-            document.getElementById('plaintext').closest('.form-group').style.display = 'none';
-            document.getElementById('ciphertext').closest('.form-group').style.display = 'none';
+            // Provide a default value if empty to satisfy 'required' attribute and show it works
+            if (!document.getElementById('plaintext').value) {
+                document.getElementById('plaintext').value = 'PLAYFAIR';
+            }
         } else {
             teardownPlayfairMatrix();
-            // Show them for other algorithms
-            document.getElementById('plaintext').closest('.form-group').style.display = 'block';
-            document.getElementById('ciphertext').closest('.form-group').style.display = 'block';
         }
+
+        // Ensure message textareas are always visible
+        document.getElementById('plaintext').closest('.form-group').style.display = 'block';
+        document.getElementById('ciphertext').closest('.form-group').style.display = 'block';
     }
 }
 

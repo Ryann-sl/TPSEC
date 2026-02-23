@@ -53,10 +53,15 @@ async function fetchAndRenderMatrix(keyword) {
     if (!keyword.trim()) return;
 
     try {
-        const token = localStorage.getItem('token') || '';
-        const resp = await fetch(`/api/playfair/matrix?keyword=${encodeURIComponent(keyword)}`, {
+        const token = getToken(); // Use getToken() from auth.js
+        const resp = await fetch(`${API_URL}/playfair/matrix?keyword=${encodeURIComponent(keyword)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        if (!resp.ok) {
+            throw new Error(`HTTP error! status: ${resp.status}`);
+        }
+
         const data = await resp.json();
 
         if (data.success) {
