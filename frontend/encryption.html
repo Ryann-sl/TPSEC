@@ -86,6 +86,39 @@
             outline: none;
             box-shadow: 0 0 5px var(--neon-cyan);
         }
+
+        /* Playfair 5x5 Matrix Visualizer */
+        #playfair-matrix-section {
+            margin-top: var(--spacing-xl);
+        }
+
+        .playfair-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            max-width: 320px;
+            margin: 12px auto;
+        }
+
+        .playfair-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--neon-cyan);
+            transition: background 0.2s;
+        }
+
+        .playfair-cell.highlight {
+            background: rgba(0, 240, 255, 0.25);
+            box-shadow: 0 0 8px var(--neon-cyan);
+        }
     </style>
 </head>
 
@@ -197,9 +230,22 @@
         </div>
     </div>
 
+    <!-- Playfair 5x5 Matrix Visualizer -->
+    <div class="container" id="playfair-matrix-section" style="display:none;">
+        <div class="card">
+            <h3 style="text-align:center;">🔲 Playfair Key Matrix (5×5)</h3>
+            <p style="text-align:center; opacity:0.7; font-size:0.9rem;">Generated from your keyword — J is merged with
+                I</p>
+            <div class="playfair-grid" id="playfair-grid"></div>
+            <p style="text-align:center; opacity:0.5; font-size:0.8rem; margin-top:8px;">Matrix updates live as you type
+                the keyword</p>
+        </div>
+    </div>
+
     <script src="js/auth.js"></script>
     <script src="js/encryption.js"></script>
     <script src="js/matrix.js"></script>
+    <script src="js/playfair.js"></script>
 </body>
 
 </html>

@@ -268,6 +268,16 @@ def decrypt_playfair():
 
 # ==================== MESSAGING ====================
 
+@app.route('/api/playfair/matrix', methods=['GET'])
+def get_playfair_matrix():
+    """Return the 5x5 Playfair key matrix for a given keyword"""
+    keyword = request.args.get('keyword', 'SECRET')
+    try:
+        matrix = PlayfairCipher.prepare_key(keyword)
+        return jsonify({'success': True, 'matrix': matrix, 'keyword': keyword}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
+
 @app.route('/api/messages/send', methods=['POST'])
 def send_message():
     """Send encrypted message"""

@@ -2,13 +2,14 @@
  * Encryption JavaScript
  */
 
-let currentAlgorithm = 'caesar';
+let currentAlgorithm = 'playfair';
 let isLocked = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!requireAuth()) return;
     loadUsers();
     setupForms();
+    selectAlgorithm('playfair');
 });
 
 function selectAlgorithm(algorithm) {
@@ -66,6 +67,19 @@ function selectAlgorithm(algorithm) {
         document.getElementById('key-decrypt').placeholder = keyPlaceholders[algorithm];
         document.getElementById('key-encrypt').value = keyPlaceholders[algorithm];
         document.getElementById('key-decrypt').value = keyPlaceholders[algorithm];
+
+        // Show Playfair 5x5 matrix visualizer
+        if (algorithm === 'playfair') {
+            initPlayfairMatrix();
+            // Hide the message textareas for Playfair as requested
+            document.getElementById('plaintext').closest('.form-group').style.display = 'none';
+            document.getElementById('ciphertext').closest('.form-group').style.display = 'none';
+        } else {
+            teardownPlayfairMatrix();
+            // Show them for other algorithms
+            document.getElementById('plaintext').closest('.form-group').style.display = 'block';
+            document.getElementById('ciphertext').closest('.form-group').style.display = 'block';
+        }
     }
 }
 
@@ -142,7 +156,7 @@ function setupForms() {
 }
 
 async function encryptMessage() {
-    const plaintext = document.getElementById('plaintext').value;
+    const plaintext = document.getElementById('plaintext').value || (currentAlgorithm === 'playfair' ? 'PLAYFAIR' : '');
     let key;
     if (currentAlgorithm === 'hill') {
         const matrixInputs = document.querySelectorAll('.hill-m-enc');
@@ -153,7 +167,7 @@ async function encryptMessage() {
 
     const receiverId = document.getElementById('receiver').value;
 
-    if (!plaintext.trim()) {
+    if (!plaintext.trim() && currentAlgorithm !== 'playfair') {
         alert('⚠️ Please enter a message to encrypt');
         return;
     }
@@ -196,7 +210,7 @@ async function encryptMessage() {
 }
 
 async function decryptMessage() {
-    const ciphertext = document.getElementById('ciphertext').value;
+    const ciphertext = document.getElementById('ciphertext').value || (currentAlgorithm === 'playfair' ? '' : '');
     let key;
     if (currentAlgorithm === 'hill') {
         const matrixInputs = document.querySelectorAll('.hill-m-dec');
@@ -205,7 +219,7 @@ async function decryptMessage() {
         key = document.getElementById('key-decrypt').value;
     }
 
-    if (!ciphertext.trim()) {
+    if (!ciphertext.trim() && currentAlgorithm !== 'playfair') {
         alert('⚠️ Please enter an encrypted message to decrypt');
         return;
     }
@@ -301,6 +315,9 @@ function resetSession() {
     document.getElementById('decrypted-text').textContent = '';
     document.getElementById('encrypt-result').classList.add('hidden');
     document.getElementById('decrypt-result').classList.add('hidden');
+
+    // Hide Playfair matrix if visible
+    teardownPlayfairMatrix();
 
     // Reset to Caesar defaults
     selectAlgorithm('caesar');
