@@ -77,6 +77,11 @@ function selectAlgorithm(algorithm) {
             document.getElementById('direction-decrypt').classList.add('hidden');
         }
 
+        // Set input types: number for caesar, text for others
+        const inputType = algorithm === 'caesar' ? 'number' : 'text';
+        document.getElementById('key-encrypt').type = inputType;
+        document.getElementById('key-decrypt').type = inputType;
+
         // Show Playfair 5x5 matrix visualizer
         if (algorithm === 'playfair') {
             initPlayfairMatrix();
@@ -197,7 +202,7 @@ async function encryptMessage() {
                 plaintext,
                 shift: currentAlgorithm === 'caesar' ? parseInt(key) : undefined,
                 direction: currentAlgorithm === 'caesar' ? direction : undefined,
-                key: currentAlgorithm !== 'caesar' ? key : undefined
+                key: currentAlgorithm !== 'caesar' ? String(key) : undefined
             })
         });
 
@@ -250,7 +255,7 @@ async function decryptMessage() {
                 ciphertext,
                 shift: currentAlgorithm === 'caesar' ? parseInt(key) : undefined,
                 direction: currentAlgorithm === 'caesar' ? document.getElementById('direction-decrypt').value : undefined,
-                key: currentAlgorithm !== 'caesar' ? key : undefined
+                key: currentAlgorithm !== 'caesar' ? String(key) : undefined
             })
         });
 

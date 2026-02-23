@@ -15,13 +15,18 @@ function initPlayfairMatrix() {
         matrixSection.style.display = 'block';
     }
 
-    const keyInput = document.getElementById('key-encrypt');
-    if (keyInput) {
-        // Render immediately with current value
-        fetchAndRenderMatrix(keyInput.value || 'SECRET');
+    const keyEnc = document.getElementById('key-encrypt');
+    const keyDec = document.getElementById('key-decrypt');
 
+    if (keyEnc) {
+        // Render immediately with current value
+        fetchAndRenderMatrix(keyEnc.value || 'SECRET');
         // Re-render on every keystroke
-        keyInput.addEventListener('input', onPlayfairKeywordChange);
+        keyEnc.addEventListener('input', onPlayfairKeywordChange);
+    }
+
+    if (keyDec) {
+        keyDec.addEventListener('input', onPlayfairKeywordChange);
     }
 }
 
@@ -33,9 +38,13 @@ function teardownPlayfairMatrix() {
     if (matrixSection) {
         matrixSection.style.display = 'none';
     }
-    const keyInput = document.getElementById('key-encrypt');
-    if (keyInput) {
-        keyInput.removeEventListener('input', onPlayfairKeywordChange);
+    const keyEnc = document.getElementById('key-encrypt');
+    const keyDec = document.getElementById('key-decrypt');
+    if (keyEnc) {
+        keyEnc.removeEventListener('input', onPlayfairKeywordChange);
+    }
+    if (keyDec) {
+        keyDec.removeEventListener('input', onPlayfairKeywordChange);
     }
 }
 
