@@ -5,6 +5,9 @@ Attempts to crack encryption by trying all possible keys
 
 import time
 import string
+import itertools
+import json
+import uuid
 
 class BruteForceAttack:
     """Simulate brute force attack on encrypted messages"""
@@ -48,7 +51,9 @@ class BruteForceAttack:
                 if char.isalpha():
                     ascii_offset = ord('A') if char.isupper() else ord('a')
                     # Shift left for decryption
-                    shifted = (ord(char) - ascii_offset - shift) % 26
+                    char_val = ord(char)
+                    base_val = char_val - ascii_offset
+                    shifted = (base_val - int(shift)) % 26
                     decrypted += chr(shifted + ascii_offset)
                 else:
                     decrypted += char
@@ -92,14 +97,129 @@ class BruteForceAttack:
         log("   - Use modern encryption (AES, RSA)")
         log("   - Increase key space complexity")
         
-        return {
-            'success': True,
-            'algorithm': 'caesar',
-            'attempts': max_attempts,
-            'results': results,
-            'logs': logs,
-            'defense_recommendation': 'Use modern encryption algorithms with large key spaces'
+    sessions: dict[str, dict[str, bool]] = {}
+
+    @classmethod
+    def get_session(cls, session_id):
+        return cls.sessions.get(session_id)
+
+    @classmethod
+    def stop_session(cls, session_id):
+        if session_id in cls.sessions:
+            cls.sessions[session_id]['stopped'] = True
+
+    @classmethod
+    def pause_session(cls, session_id):
+        if session_id in cls.sessions:
+            cls.sessions[session_id]['paused'] = True
+
+    @classmethod
+    def resume_session(cls, session_id):
+        if session_id in cls.sessions:
+            cls.sessions[session_id]['paused'] = False
+
+    @classmethod
+    def crack_password(cls, password, mode=3, session_id=None):
+        """
+        Brute force a raw password by determining its length and guessing.
+        """
+        if not session_id:
+            session_id = str(uuid.uuid4())
+            
+        cls.sessions[session_id] = {
+            'paused': False,
+            'stopped': False
         }
+        
+        def log_event(message, event_type="log", extra=None):
+            payload = {'type': event_type, 'message': message, 'timestamp': time.time()}
+            if extra:
+                payload.update(extra)
+            return f"data: {json.dumps(payload)}\n\n"
+                
+        yield log_event("🎯 Raw Password Brute Force Simulation", extra={'session_id': session_id})
+        yield log_event(f"🔍 Target Password: [HIDDEN]")
+        
+        mode = int(mode)
+        yield log_event(f"⚙️ Selected Mode: {mode}")
+        
+        # Determine charset and length based on mode
+        if mode == 3:
+            chars = "234"
+            length = 3
+            yield log_event("📝 Restriction: 3 characters long, using only '2', '3', '4'")
+        elif mode == 5:
+            chars = string.digits
+            length = 5
+            yield log_event("� Restriction: 5 characters long, using only digits (0-9)")
+        elif mode == 6:
+            chars = string.ascii_letters + string.digits + "+*!@#$%^&()-_=[]{}|;:,.<>?/"
+            length = 6
+            yield log_event("📝 Restriction: 6 characters long, using all alphanumeric and special characters")
+        else:
+            # Fallback to authentic brute force if mode is invalid
+            length = len(password)
+            chars = string.ascii_lowercase + string.ascii_uppercase + string.digits + string.punctuation
+            yield log_event(f"⚠️ Invalid mode. Falling back to length {length} with full charset.")
+            
+        if len(password) != length:
+             yield log_event(f"⚠️ Note: The target password is {len(password)} chars, but we are enforcing a length of {length} chars.")
+        
+        yield log_event(f"🎲 Step 2: Guessing combinations of length {length}...")
+        yield log_event(f"Charset size is {len(chars)}. Possible combinations: {len(chars)**length}")
+        
+        start_time = time.time()
+        elapsed_time: float = 0.0
+        attempts = 0
+        found = False
+        
+        for guess_tuple in itertools.product(chars, repeat=length):
+            # Check session state
+            session = cls.sessions.get(session_id)
+            if not session:
+                break
+                
+            if session['stopped']:
+                yield log_event("🛑 Attack stopped by user.")
+                break
+                
+            if session['paused']:
+                yield log_event("⏸️ Attack paused...")
+                while session['paused'] and not session['stopped']:
+                    time.sleep(0.5)
+                if session['stopped']:
+                    yield log_event("🛑 Attack stopped by user.")
+                    break
+                yield log_event("▶️ Attack resumed!")
+                # reset start time to account for pause
+                start_time = time.time() - float(elapsed_time)
+            
+            guess = "".join(guess_tuple)
+            attempts += 1
+            
+            # Keep the console active by logging the first 1,000 and every 100,000 attempts
+            if attempts <= 1000:
+                yield log_event(f"Attempt {attempts}: '{guess}'")
+            elif attempts % 100000 == 0:
+                yield log_event(f"Attempt {attempts:,}: '{guess}'")
+                
+            if guess == password:
+                found = True
+                yield log_event(f"✅ CRACKED! Found the password: '{guess}'")
+                yield log_event(f"Total attempts needed: {attempts}")
+                elapsed_time = float(time.time() - start_time)
+                yield log_event({'attempts': attempts, 'time': elapsed_time}, "done")
+                break
+                
+            # Update elapsed time
+            elapsed_time = float(time.time() - start_time)
+                
+        if not found and not cls.sessions.get(session_id, {}).get('stopped'):
+            yield log_event("❌ Could not crack the password within combination limits.")
+            yield log_event({'attempts': attempts, 'time': elapsed_time}, "done")
+            
+        # Cleanup session
+        cls.sessions.pop(session_id, None)
     
     @staticmethod
     def estimate_time(key_space, attempts_per_second=1000000):

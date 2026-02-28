@@ -3,7 +3,7 @@ Main Flask Application
 Cyber Security Learning Platform Backend
 """
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 import sqlite3
 import os
@@ -505,26 +505,46 @@ def attack_bruteforce():
     
     try:
         ciphertext = data.get('ciphertext', '')
+        password = data.get('password', ciphertext)
         algorithm = data.get('algorithm', 'caesar')
         
-        if algorithm == 'caesar':
-            result = BruteForceAttack.crack_caesar(ciphertext)
+        # We now use the raw password guessing regardless of if the UI still says 'caesar'
+        if algorithm == 'caesar' or algorithm == 'password_guess' or algorithm == 'raw':
+            import uuid
+            session_id = str(uuid.uuid4())
+            mode = data.get('mode', 3)
+            generator = BruteForceAttack.crack_password(password, mode=mode, session_id=session_id)
+            response = Response(generator, mimetype='text/event-stream')
+            response.headers['Cache-Control'] = 'no-cache'
+            response.headers['X-Accel-Buffering'] = 'no'
+            response.headers['X-Session-ID'] = session_id
+            return response
         else:
             return jsonify({
                 'success': False,
                 'message': f'Brute force not implemented for {algorithm}'
             }), 400
         
-        return jsonify({
-            'success': True,
-            'result': result
-        }), 200
-        
     except Exception as e:
         return jsonify({
             'success': False,
             'message': str(e)
         }), 400
+
+@app.route('/api/attack/bruteforce/stop/<session_id>', methods=['POST'])
+def attack_bruteforce_stop(session_id):
+    BruteForceAttack.stop_session(session_id)
+    return jsonify({'success': True, 'message': 'Stop signal sent'}), 200
+
+@app.route('/api/attack/bruteforce/pause/<session_id>', methods=['POST'])
+def attack_bruteforce_pause(session_id):
+    BruteForceAttack.pause_session(session_id)
+    return jsonify({'success': True, 'message': 'Attack paused'}), 200
+
+@app.route('/api/attack/bruteforce/resume/<session_id>', methods=['POST'])
+def attack_bruteforce_resume(session_id):
+    BruteForceAttack.resume_session(session_id)
+    return jsonify({'success': True, 'message': 'Attack resumed'}), 200
 
 @app.route('/api/password/strength', methods=['POST'])
 def check_password_strength():
