@@ -132,15 +132,23 @@ def encrypt_caesar():
     
     try:
         plaintext = data.get('plaintext', '')
-        shift = int(data.get('shift', 3))
+        shift = data.get('shift', 3)
+        direction = data.get('direction', 'right')
         
-        encrypted = CaesarCipher.encrypt(plaintext, shift)
+        # Ensure shift is integer
+        try:
+            shift = int(shift)
+        except:
+            shift = 3
+            
+        encrypted = CaesarCipher.encrypt(plaintext, shift, direction)
         
         return jsonify({
             'success': True,
             'encrypted': encrypted,
             'algorithm': 'caesar',
-            'key': shift
+            'key': shift,
+            'direction': direction
         }), 200
         
     except Exception as e:
@@ -157,13 +165,15 @@ def decrypt_caesar():
     try:
         ciphertext = data.get('ciphertext', '')
         shift = int(data.get('shift', 3))
+        direction = data.get('direction', 'right')
         
-        decrypted = CaesarCipher.decrypt(ciphertext, shift)
+        decrypted = CaesarCipher.decrypt(ciphertext, shift, direction)
         
         return jsonify({
             'success': True,
             'decrypted': decrypted,
-            'algorithm': 'caesar'
+            'algorithm': 'caesar',
+            'direction': direction
         }), 200
         
     except Exception as e:
@@ -267,6 +277,16 @@ def decrypt_playfair():
         }), 400
 
 # ==================== MESSAGING ====================
+
+@app.route('/api/playfair/matrix', methods=['GET'])
+def get_playfair_matrix():
+    """Return the 5x5 Playfair key matrix for a given keyword"""
+    keyword = request.args.get('keyword', 'SECRET')
+    try:
+        matrix = PlayfairCipher.prepare_key(keyword)
+        return jsonify({'success': True, 'matrix': matrix, 'keyword': keyword}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
 
 @app.route('/api/messages/send', methods=['POST'])
 def send_message():
@@ -418,28 +438,65 @@ def attack_mitm():
             'message': str(e)
         }), 400
 
-@app.route('/api/attack/dictionary', methods=['POST'])
-def attack_dictionary():
-    """Simulate dictionary attack"""
+@app.route('/api/attack/dictionary/start', methods=['POST'])
+def attack_dictionary_start():
+    """Start a dictionary attack session (wordlist sent as JSON array)"""
     data = request.get_json()
-    
     try:
-        target_password = data.get('password', '')
-        max_attempts = int(data.get('max_attempts', 50))
-        custom_wordlist = data.get('wordlist')
-        
-        result = DictionaryAttack.simulate_attack(target_password, max_attempts, custom_wordlist)
-        
-        return jsonify({
-            'success': True,
-            'result': result
-        }), 200
-        
+        target_password = data.get('password', '').strip()
+        wordlist = data.get('wordlist', [])
+
+        if not target_password:
+            return jsonify({'success': False, 'message': 'Password is required'}), 400
+        if not wordlist:
+            return jsonify({'success': False, 'message': 'Wordlist file is required'}), 400
+
+        session_id = DictionaryAttack.create_session(target_password, wordlist)
+        return jsonify({'success': True, 'session_id': session_id}), 200
+
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 400
+        return jsonify({'success': False, 'message': str(e)}), 400
+
+
+@app.route('/api/attack/dictionary/poll/<session_id>', methods=['GET'])
+def attack_dictionary_poll(session_id):
+    """Poll the current state of a dictionary attack session"""
+    session = DictionaryAttack.get_session(session_id)
+    if not session:
+        return jsonify({'success': False, 'message': 'Session not found'}), 404
+
+    return jsonify({
+        'success': True,
+        'attempts': session['attempts'],
+        'total': session['total'],
+        'found': session['found'],
+        'stopped': session['stopped'],
+        'paused': session['paused'],
+        'done': session['done'],
+        'elapsed': session['elapsed'],
+        'logs': session['logs']
+    }), 200
+
+
+@app.route('/api/attack/dictionary/stop/<session_id>', methods=['POST'])
+def attack_dictionary_stop(session_id):
+
+    DictionaryAttack.stop_session(session_id)
+    return jsonify({'success': True, 'message': 'Stop signal sent'}), 200
+
+
+@app.route('/api/attack/dictionary/pause/<session_id>', methods=['POST'])
+def attack_dictionary_pause(session_id):
+    """Pause a running dictionary attack session"""
+    DictionaryAttack.pause_session(session_id)
+    return jsonify({'success': True, 'message': 'Attack paused'}), 200
+
+
+@app.route('/api/attack/dictionary/resume/<session_id>', methods=['POST'])
+def attack_dictionary_resume(session_id):
+    """Resume a paused dictionary attack session"""
+    DictionaryAttack.resume_session(session_id)
+    return jsonify({'success': True, 'message': 'Attack resumed'}), 200
 
 @app.route('/api/attack/bruteforce', methods=['POST'])
 def attack_bruteforce():

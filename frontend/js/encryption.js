@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!requireAuth()) return;
     loadUsers();
     setupForms();
+    selectAlgorithm('caesar');
 });
 
 function selectAlgorithm(algorithm) {
@@ -66,6 +67,35 @@ function selectAlgorithm(algorithm) {
         document.getElementById('key-decrypt').placeholder = keyPlaceholders[algorithm];
         document.getElementById('key-encrypt').value = keyPlaceholders[algorithm];
         document.getElementById('key-decrypt').value = keyPlaceholders[algorithm];
+
+        // Set input types: number for caesar, text for others
+        const inputType = algorithm === 'caesar' ? 'number' : 'text';
+        document.getElementById('key-encrypt').type = inputType;
+        document.getElementById('key-decrypt').type = inputType;
+
+        // Show Playfair 5x5 matrix visualizer
+        if (algorithm === 'playfair') {
+            initPlayfairMatrix();
+            // Provide a default value if empty to satisfy 'required' attribute and show it works
+            if (!document.getElementById('plaintext').value) {
+                document.getElementById('plaintext').value = 'PLAYFAIR';
+            }
+        } else {
+            teardownPlayfairMatrix();
+        }
+
+        // Ensure message textareas are always visible
+        document.getElementById('plaintext').closest('.form-group').style.display = 'block';
+        document.getElementById('ciphertext').closest('.form-group').style.display = 'block';
+    }
+
+    // Toggle Direction UI - Only for Caesar
+    if (algorithm === 'caesar') {
+        document.getElementById('direction-encrypt').classList.remove('hidden');
+        document.getElementById('direction-decrypt').classList.remove('hidden');
+    } else {
+        document.getElementById('direction-encrypt').classList.add('hidden');
+        document.getElementById('direction-decrypt').classList.add('hidden');
     }
 }
 
@@ -142,7 +172,7 @@ function setupForms() {
 }
 
 async function encryptMessage() {
-    const plaintext = document.getElementById('plaintext').value;
+    const plaintext = document.getElementById('plaintext').value || (currentAlgorithm === 'playfair' ? 'PLAYFAIR' : '');
     let key;
     if (currentAlgorithm === 'hill') {
         const matrixInputs = document.querySelectorAll('.hill-m-enc');
@@ -153,7 +183,7 @@ async function encryptMessage() {
 
     const receiverId = document.getElementById('receiver').value;
 
-    if (!plaintext.trim()) {
+    if (!plaintext.trim() && currentAlgorithm !== 'playfair') {
         alert('⚠️ Please enter a message to encrypt');
         return;
     }
@@ -164,12 +194,15 @@ async function encryptMessage() {
     }
 
     try {
+        const direction = currentAlgorithm === 'caesar' ? document.getElementById('direction-encrypt').value : 'none';
+
         const data = await apiRequest(`/encrypt/${currentAlgorithm}`, {
             method: 'POST',
             body: JSON.stringify({
                 plaintext,
                 shift: currentAlgorithm === 'caesar' ? parseInt(key) : undefined,
-                key: currentAlgorithm !== 'caesar' ? key : undefined
+                direction: currentAlgorithm === 'caesar' ? direction : undefined,
+                key: currentAlgorithm !== 'caesar' ? String(key) : undefined
             })
         });
 
@@ -196,7 +229,7 @@ async function encryptMessage() {
 }
 
 async function decryptMessage() {
-    const ciphertext = document.getElementById('ciphertext').value;
+    const ciphertext = document.getElementById('ciphertext').value || (currentAlgorithm === 'playfair' ? '' : '');
     let key;
     if (currentAlgorithm === 'hill') {
         const matrixInputs = document.querySelectorAll('.hill-m-dec');
@@ -205,7 +238,7 @@ async function decryptMessage() {
         key = document.getElementById('key-decrypt').value;
     }
 
-    if (!ciphertext.trim()) {
+    if (!ciphertext.trim() && currentAlgorithm !== 'playfair') {
         alert('⚠️ Please enter an encrypted message to decrypt');
         return;
     }
@@ -221,7 +254,8 @@ async function decryptMessage() {
             body: JSON.stringify({
                 ciphertext,
                 shift: currentAlgorithm === 'caesar' ? parseInt(key) : undefined,
-                key: currentAlgorithm !== 'caesar' ? key : undefined
+                direction: currentAlgorithm === 'caesar' ? document.getElementById('direction-decrypt').value : undefined,
+                key: currentAlgorithm !== 'caesar' ? String(key) : undefined
             })
         });
 
@@ -301,6 +335,9 @@ function resetSession() {
     document.getElementById('decrypted-text').textContent = '';
     document.getElementById('encrypt-result').classList.add('hidden');
     document.getElementById('decrypt-result').classList.add('hidden');
+
+    // Hide Playfair matrix if visible
+    teardownPlayfairMatrix();
 
     // Reset to Caesar defaults
     selectAlgorithm('caesar');

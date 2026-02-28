@@ -16,7 +16,7 @@ This is a complete, production-ready **Cyber Security Learning Platform** built 
 
 **STATUS: FULLY COMPLETE AND RUNNING** ✅
 
-- ✅ Backend API (Flask) - Running on http://localhost:5000
+- ✅ Backend (Flask) - Running on http://localhost:5000
 - ✅ Database (SQLite) - Initialized with all tables
 - ✅ Frontend (HTML/CSS/JS) - All pages created
 - ✅ Authentication System - JWT + bcrypt implemented

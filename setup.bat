@@ -41,4 +41,4 @@ echo   1. Run: venv\Scripts\activate
 echo   2. Run: python backend\app.py
 echo   3. Open: http://localhost:5000
 echo.
-pause
+if "%~1" neq "--no-pause" pause
