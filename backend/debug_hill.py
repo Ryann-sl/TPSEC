@@ -1,3 +1,9 @@
+import sys
+import os
+
+# Add current directory to path so crypto_algorithms can be imported
+sys.path.append(os.path.dirname(__file__))
+
 from crypto_algorithms.hill import HillCipher
 
 def debug_hill_key():
