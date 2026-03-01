@@ -29,12 +29,12 @@ let mitmState = {
     encryptedMessage: ''
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    if (!requireAuth()) return;
-
-});
-
 function showAttack(type) {
+    if (type === 'mitm') {
+        alert('Man-in-the-Middle (MiTM) Attack simulation is coming soon!');
+        return;
+    }
+
     // Prevent switching if an attack is already running
     if (activeAttack && activeAttack !== type) {
         alert(`⚠️ An attack (${activeAttack.toUpperCase()}) is currently in progress. Please stop or finish it before switching.`);
@@ -60,12 +60,58 @@ function showAttack(type) {
 
 async function startMITM() {
     if (activeAttack) return;
+
+    const message = document.getElementById('mitm-message').value;
+    const algo = document.getElementById('mitm-algo-select').value;
+    const key = document.getElementById('mitm-key').value;
+
+    if (!message) {
+        alert('Please enter a message to send.');
+        return;
+    }
+
     activeAttack = 'mitm';
+    mitmState.originalMessage = message;
+    mitmState.algorithm = algo;
+    mitmState.key = key;
 
-    mitmState.originalMessage = document.getElementById('mitm-message').value;
-    mitmState.algorithm = 'plaintext';
+    let encryptedMessage = message;
 
-    mitmState.encryptedMessage = mitmState.originalMessage;
+    // Perform encryption if needed
+    if (algo !== 'plaintext') {
+        try {
+            const endpoint = `/encrypt/${algo}`;
+            const payload = { plaintext: message };
+            if (algo === 'caesar') {
+                payload.shift = key || 3;
+            } else {
+                payload.key = key || (algo === 'hill' ? 'HILL' : 'SECRET');
+            }
+
+            const data = await apiRequest(endpoint, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            if (data && data.success) {
+                encryptedMessage = data.encrypted;
+            } else {
+                throw new Error(data ? data.message : 'Encryption failed');
+            }
+        } catch (error) {
+            alert('Encryption Error: ' + error.message);
+            activeAttack = null;
+            return;
+        }
+    }
+
+    mitmState.encryptedMessage = encryptedMessage;
+
+    // UI: Reset decrypt tool preview
+    const preview = document.getElementById('mitm-decrypted-preview');
+    if (preview) preview.textContent = '';
+    const attackerKeyInput = document.getElementById('mitm-attacker-key');
+    if (attackerKeyInput) attackerKeyInput.value = '';
 
     // Start Animation: Sender -> Attacker
     const packet = document.getElementById('mitm-packet');
@@ -82,8 +128,48 @@ async function startMITM() {
 
     // Wait for animation to reach middle (2s defined in CSS)
     setTimeout(() => {
-        showInterceptPanel(mitmState.encryptedMessage);
+        showInterceptPanel(encryptedMessage);
     }, 2000);
+}
+
+async function mitmAttackerDecrypt() {
+    const ciphertext = document.getElementById('intercepted-text').value;
+    const key = document.getElementById('mitm-attacker-key').value;
+    const algo = mitmState.algorithm;
+    const preview = document.getElementById('mitm-decrypted-preview');
+
+    if (algo === 'plaintext') {
+        preview.textContent = 'Message is already plaintext.';
+        return;
+    }
+
+    if (!key) {
+        preview.textContent = 'Enter a key to attempt decryption.';
+        return;
+    }
+
+    try {
+        const endpoint = `/decrypt/${algo}`;
+        const payload = { ciphertext: ciphertext };
+        if (algo === 'caesar') {
+            payload.shift = key;
+        } else {
+            payload.key = key;
+        }
+
+        const data = await apiRequest(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        if (data && data.success) {
+            preview.innerHTML = `🔓 <span class="text-success">Plaintext:</span> ${data.decrypted}`;
+        } else {
+            preview.innerHTML = `❌ <span class="text-danger">Failed:</span> ${data.message || 'Invalid key'}`;
+        }
+    } catch (error) {
+        preview.innerHTML = '❌ Error attempting decryption.';
+    }
 }
 
 function showInterceptPanel(encryptedText) {
@@ -118,7 +204,8 @@ async function forwardMessage() {
             body: JSON.stringify({
                 encrypted_message: mitmState.encryptedMessage,
                 algorithm: mitmState.algorithm,
-                modified_message: modifiedText
+                modified_message: modifiedText,
+                key: mitmState.key
             })
         });
 
@@ -127,6 +214,23 @@ async function forwardMessage() {
             activeAttack = null;
             if (data && data.success) {
                 displayTerminalLogs(data.result.logs, 'mitm-results', 'mitm');
+                // Optional: Show what Bob actually sees
+                if (data.result.receiver_plaintext) {
+                    const results = document.getElementById('mitm-results');
+                    results.innerHTML += `
+                        <div class="card mt-3" style="border-left: 4px solid var(--neon-cyan); background: rgba(0, 240, 255, 0.05);">
+                            <h4 style="color: var(--neon-cyan); margin-bottom: 0.5rem;">📥 Bob (Receiver) Received:</h4>
+                            <div style="font-family: 'Fira Code', monospace; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                                ${data.result.receiver_plaintext}
+                            </div>
+                            <p class="text-secondary mt-2" style="font-size: 0.85rem;">
+                                ${data.result.modified_message !== data.result.intercepted_message ?
+                            '⚠️ Note: The message was tampered during transit!' :
+                            '✅ Message matches the original ciphertext.'}
+                            </p>
+                        </div>
+                    `;
+                }
             }
         }, 2000);
 
@@ -139,42 +243,90 @@ async function forwardMessage() {
 
 // ==================== DICTIONARY ATTACK ====================
 
-let dictSessionId = null;
-let dictPollInterval = null;
-let dictTimerInterval = null;
-let dictStartTime = null;
-let dictRenderedLogs = 0;
+let dictSessionId = null; //unique id returned by server to identify attack session
+let dictPollIntervalId = null; // polling (time of each server call)
+let dictTimerInterval = null; // timer for elapsed time
+let dictStartTime = null; // start time of the attack
+let dictRenderedLogs = 0; // number of logs rendered
 let dictIsPaused = false;  // client-side tracking of pause state
 
+function updateDictModeInfo() {
+
+    document.getElementById('dict-case-info').classList.remove('hidden');
+}
+
 async function startDictionary() {
-    const password = document.getElementById('dict-password').value.trim();
+    const password = document.getElementById('dict-password').value;
+    const caseId = document.getElementById('dict-case-select').value;
     const fileInput = document.getElementById('dict-file');
+    const file = fileInput.files[0];
 
     if (!password) {
-        alert("Please enter a target password.");
-        return;
-    }
-    if (!fileInput.files || fileInput.files.length === 0) {
-        alert("Please upload a wordlist .txt file.");
+        alert('Please enter a target password to crack.');
         return;
     }
 
-    // Read the file
-    let wordlist;
+    if (!file) {
+        alert('Please implement a file (Wordlist required).');
+        return;
+    }
+
+    // Read the file content
+    let wordlist = [];
     try {
-        const text = await readFile(fileInput.files[0]);
-        wordlist = text.split(/\r?\n/).filter(line => line.trim() !== '');
-    } catch (e) {
-        alert("Error reading file.");
+        const content = await readFile(file);
+        wordlist = content.split(/\r?\n/).filter(line => line.trim() !== '');
+
+        if (wordlist.length === 0) {
+            alert('The provided file is empty or invalid.');
+            return;
+        }
+
+        // --- CONTENT VALIDATION BASED ON CASE ---
+        const firstFew = wordlist.slice(0, 10); // Check a sample
+        let isValid = true;
+        let errorMsg = '';
+
+        if (caseId === 'case1') {
+            // Case 1: 3 chars, ONLY {2, 3, 4}
+            const invalid = wordlist.find(w => w.length !== 3 || !/^[234]+$/.test(w));
+            if (invalid) {
+                isValid = false;
+                errorMsg = `Case 1 Mismatch: Found invalid entry "${invalid}".\nExpected: 3 characters using only {2, 3, 4}.`;
+            }
+        } else if (caseId === 'case2') {
+            // Case 2: 5 digits
+            const invalid = wordlist.find(w => w.length !== 5 || !/^\d+$/.test(w));
+            if (invalid) {
+                isValid = false;
+                errorMsg = `Case 2 Mismatch: Found invalid entry "${invalid}".\nExpected: Exactly 5 digits (0-9).`;
+            }
+        } else if (caseId === 'case3') {
+            // Case 3: 6 chars mixed
+            const invalid = wordlist.find(w => w.length !== 6);
+            if (invalid) {
+                isValid = false;
+                errorMsg = `Case 3 Mismatch: Found invalid entry "${invalid}".\nExpected: Exactly 6 characters.`;
+            }
+        }
+
+        if (!isValid) {
+            alert(`⚠️ WORDLIST ERROR\n\n${errorMsg}\n\nPlease upload the correct file for ${caseId.toUpperCase()} or change the Attack Mode.`);
+            return;
+        }
+
+    } catch (error) {
+        alert('Problem reading the wordlist file: ' + error.message);
         return;
     }
 
-    if (wordlist.length === 0) {
-        alert("The wordlist file is empty.");
-        return;
-    }
+    const payload = {
+        password: password,
+        case_id: caseId,
+        wordlist: wordlist
+    };
 
-    // Clear previous analysis card
+    // UI Updates
     const oldAnalysis = document.getElementById('dict-strength-analysis');
     if (oldAnalysis) oldAnalysis.remove();
 
@@ -182,22 +334,25 @@ async function startDictionary() {
     dictStartTime = Date.now();
     activeAttack = 'dictionary';
     dictIsPaused = false;
+
     document.getElementById('dict-start-btn').style.display = 'none';
     document.getElementById('dict-pause-btn').style.display = 'inline-flex';
     document.getElementById('dict-pause-btn').textContent = '⏸ Pause';
     document.getElementById('dict-stop-btn').style.display = 'inline-flex';
     document.getElementById('dict-status-bar').style.display = 'block';
+
     document.getElementById('dict-progress-text').textContent = `0 / ${wordlist.length}`;
     document.getElementById('dict-progress-bar').style.width = '0%';
     document.getElementById('dict-elapsed').textContent = '0.0s';
     document.getElementById('dictionary-results').innerHTML = buildTerminalShell('dictionary');
 
-    // Elapsed timer (client-side, ticks every 100ms)
-    clearInterval(dictTimerInterval);
+    // Start/Reset Local UI Timer
+    if (dictTimerInterval) clearInterval(dictTimerInterval);
     dictTimerInterval = setInterval(() => {
         if (dictSessionId && !dictIsPaused && dictStartTime) {
             const sec = ((Date.now() - dictStartTime) / 1000).toFixed(1);
-            document.getElementById('dict-elapsed').textContent = sec + 's';
+            const el = document.getElementById('dict-elapsed');
+            if (el) el.textContent = sec + 's';
         }
     }, 100);
 
@@ -206,10 +361,10 @@ async function startDictionary() {
     try {
         data = await apiRequest('/attack/dictionary/start', {
             method: 'POST',
-            body: JSON.stringify({ password, wordlist })
+            body: JSON.stringify(payload)
         });
     } catch (e) {
-        alertDictError('Failed to start attack. Check server.');
+        alertDictError('Failed to start attack. Check server connectivity.');
         return;
     }
 
@@ -221,16 +376,15 @@ async function startDictionary() {
     dictSessionId = data.session_id;
 
     // Polling loop every 500ms
-    clearInterval(dictPollInterval);
-    dictPollInterval = setInterval(async () => {
+    if (dictPollIntervalId) clearInterval(dictPollIntervalId);
+    dictPollIntervalId = setInterval(async () => {
         try {
             const poll = await apiRequest(`/attack/dictionary/poll/${dictSessionId}`, { method: 'GET' });
             if (!poll || !poll.success) return;
 
             // Sync elapsed time from server to local start time to avoid drift
             if (poll.elapsed !== undefined) {
-                // Adjust dictStartTime so (Date.now() - dictStartTime) equals poll.elapsed
-                // Only if not paused (when paused, the interval does nothing anyway)
+
                 if (!poll.paused) {
                     dictStartTime = Date.now() - (poll.elapsed * 1000);
                 } else {
@@ -240,7 +394,7 @@ async function startDictionary() {
             }
 
             // Append only new logs
-            const termBody = document.getElementById('dict-terminal-body');
+            const termBody = document.getElementById('dictionary-terminal-body');
             if (termBody) {
                 const newLogs = poll.logs.slice(dictRenderedLogs);
                 newLogs.forEach(log => {
@@ -278,16 +432,6 @@ async function startDictionary() {
     }, 500);
 }
 
-// Update the timer interval to respect paused state
-clearInterval(dictTimerInterval);
-dictTimerInterval = setInterval(() => {
-    if (dictSessionId && !dictIsPaused && dictStartTime) {
-        const sec = ((Date.now() - dictStartTime) / 1000).toFixed(1);
-        const el = document.getElementById('dict-elapsed');
-        if (el) el.textContent = sec + 's';
-    }
-}, 100);
-
 function stopDictionary() {
     if (dictSessionId) {
         activeAttack = null;
@@ -306,9 +450,9 @@ function togglePauseDictionary() {
 
 async function finishDictionary(poll) {
     activeAttack = null;
-    clearInterval(dictPollInterval);
-    clearInterval(dictTimerInterval);
-    dictPollInterval = null;
+    if (dictPollIntervalId) clearInterval(dictPollIntervalId);
+    if (dictTimerInterval) clearInterval(dictTimerInterval);
+    dictPollIntervalId = null;
     dictTimerInterval = null;
 
     // Final elapsed from server

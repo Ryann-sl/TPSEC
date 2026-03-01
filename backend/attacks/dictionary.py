@@ -1,37 +1,56 @@
-
+import os
 import time
 import threading
+import uuid
 
 class DictionaryAttack:
-
+    """
+    Handles Dictionary Attacks using wordlists provided by the user.
+    """
     _sessions = {}
     _lock = threading.Lock()
 
     @classmethod
-    def create_session(cls, target_password, wordlist):
-        import uuid
+    def create_session(cls, target, wordlist=None, file_path=None):
+        """Initialize a dictionary attack session (supports array or file_path)."""
         session_id = str(uuid.uuid4())
-        session = {
-            'id': session_id,
-            'target_password': target_password,
-            'wordlist': wordlist,
-            'logs': [],
-            'attempts': 0,
-            'total': len(wordlist),
-            'found': False,
-            'stopped': False,
-            'paused': False,
-            'done': False,
-            'start_time': time.time(),
-            'paused_accumulated': 0.0,  # total seconds spent paused
-            'pause_start': None,
-            'elapsed': 0.0,
-        }
+        
+        # Determine total passwords for progress tracking
+        total_count = 0
+        if wordlist:
+            total_count = len(wordlist)
+        elif file_path and os.path.exists(file_path):
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    for _ in f:
+                        total_count += 1
+            except Exception:
+                total_count = 0
+
         with cls._lock:
-            cls._sessions[session_id] = session
-        # Run in background thread
-        t = threading.Thread(target=cls._run, args=(session_id,), daemon=True)
-        t.start()
+            cls._sessions[session_id] = {
+                'id': session_id,
+                'target': target.lower(),
+                'wordlist': wordlist,
+                'file_path': file_path,
+                'attempts': 0,
+                'total': total_count,
+                'found': False,
+                'done': False,
+                'paused': False,
+                'start_time': time.time(),
+                'paused_accumulated': 0,
+                'pause_start': None,
+                'elapsed': 0.0,
+                'logs': [],
+                'result_password': None
+            }
+
+        # Start background thread
+        thread = threading.Thread(target=cls._run, args=(session_id,))
+        thread.daemon = True
+        thread.start()
+
         return session_id
 
     @classmethod
@@ -44,8 +63,8 @@ class DictionaryAttack:
         with cls._lock:
             s = cls._sessions.get(session_id)
             if s:
-                s['stopped'] = True
-                s['paused'] = False  # unblock the loop so it can exit
+                s['done'] = True
+                s['paused'] = False
 
     @classmethod
     def pause_session(cls, session_id):
@@ -74,58 +93,83 @@ class DictionaryAttack:
 
     @classmethod
     def _run(cls, session_id):
+        """Background thread execution for dictionary attack."""
         with cls._lock:
             s = cls._sessions.get(session_id)
-        if not s:
+        if not s: return
+
+        cls._log(s, "🚀 Starting Dictionary Attack...")
+        
+        # Determine source
+        if s.get('wordlist'):
+            cls._log(s, f"📋 Wordlist: Loaded {len(s['wordlist'])} entries from user upload.")
+            source_desc = "user upload"
+        elif s.get('file_path') and os.path.exists(s['file_path']):
+            cls._log(s, f"📂 Wordlist: {os.path.basename(s['file_path'])}")
+            source_desc = f"file ({os.path.basename(s['file_path'])})"
+        else:
+            cls._log(s, "❌ ERROR: No wordlist data provided or file missing.")
+            s['done'] = True
             return
 
-        cls._log(s, "🎯 Dictionary Attack Initiated")
-        cls._log(s, f"� Wordlist size: {s['total']} passwords")
-        cls._log(s, "⚠️  Starting attack...\n")
+        cls._log(s, f"🎯 Target Password: {s['target']}")
+        target = s['target']
 
-        target = s['target_password'].lower()
+        def get_words_stream():
+            if s.get('wordlist'):
+                for w in s['wordlist']:
+                    yield w
+            elif s.get('file_path'):
+                try:
+                    with open(s['file_path'], 'r', encoding='utf-8', errors='ignore') as f:
+                        for line in f:
+                            yield line.strip()
+                except Exception as e:
+                    cls._log(s, f"⚠️ Error reading wordlist file: {str(e)}")
+                    return
 
-        for password in s['wordlist']:
-            # Wait while paused
-            while s['paused'] and not s['stopped']:
-                time.sleep(0.1)
+        try:
+            for password in get_words_stream():
+                # Check for stop/pause
+                while s['paused'] and not s['done']:
+                    time.sleep(0.5)
+                
+                if s['done']:
+                    cls._log(s, f"\n🛑 Attack stopped after {s['attempts']} attempts.")
+                    return
 
-            # Check stop flag
-            if s['stopped']:
-                cls._log(s, f"\n🛑 Attack stopped by user after {s['attempts']} attempts.")
-                s['done'] = True
-                s['elapsed'] = round(time.time() - s['start_time'], 2)
-                return
+                if not password: continue
 
-            s['attempts'] += 1
-            s['elapsed'] = round(time.time() - s['start_time'] - s['paused_accumulated'], 2)
+                s['attempts'] += 1
+                s['elapsed'] = round(time.time() - s['start_time'] - s['paused_accumulated'], 1)
 
-            cls._log(s, f"Attempt {s['attempts']}: Trying '{password}'...")
+                # Periodic logging for feedback
+                if s['attempts'] % 1000 == 0 or s['attempts'] <= 5:
+                    cls._log(s, f"Testing: {password} (Attempt {s['attempts']})")
 
-            if password.lower() == target:
-                s['found'] = True
-                cls._log(s, f"\n✅ SUCCESS! Password cracked: '{password}'")
-                cls._log(s, f"🔓 Found in {s['attempts']} attempts — {s['elapsed']}s elapsed")
-                s['done'] = True
-                s['elapsed'] = round(time.time() - s['start_time'] - s['paused_accumulated'], 2)
-                return
+                # Smooth UI for fast attacks
+                if s['attempts'] < 100:
+                    time.sleep(0.01)
 
-            time.sleep(0.03)  # Simulate processing delay
+                if password.lower() == target:
+                    s['found'] = True
+                    cls._log(s, f"\n🎯 MATCH FOUND! Current password matching '{target}'")
+                    cls._log(s, f"🔓 Results: '{password}' found in {s['elapsed']}s")
+                    s['done'] = True
+                    s['result_password'] = password
+                    return
 
-        cls._log(s, f"\n❌ Attack completed — password not found after {s['attempts']} attempts.")
+        except Exception as e:
+            cls._log(s, f"⚠️ Background thread error: {str(e)}")
+
         s['done'] = True
-        s['elapsed'] = round(time.time() - s['start_time'] - s['paused_accumulated'], 2)
+        if not s['found']:
+            cls._log(s, f"\n🛑 Dictionary exhausted ({source_desc}). No match found.")
 
     @staticmethod
     def check_password_strength(password):
         score = 0
         feedback = []
-        common = [
-            "password", "123456", "12345678", "qwerty", "abc123",
-            "monkey", "letmein", "trustno1", "dragon", "baseball",
-            "iloveyou", "master", "sunshine", "passw0rd", "shadow",
-            "admin", "root", "toor", "pass", "test", "guest", "user"
-        ]
 
         if len(password) >= 12:
             score += 2
@@ -160,10 +204,6 @@ class DictionaryAttack:
         else:
             feedback.append("❌ No special characters")
 
-        if password.lower() in common:
-            score = 0
-            feedback.append("❌ CRITICAL: Password in common dictionary!")
-
         if score >= 5:
             strength = "STRONG"
         elif score >= 3:
@@ -176,31 +216,4 @@ class DictionaryAttack:
             'score': score,
             'max_score': 6,
             'feedback': feedback
-        }
-
-    @staticmethod
-    def explain_dictionary_attack():
-        return {
-            'title': 'Dictionary Attack',
-            'description': 'An attack that tries passwords from a wordlist file.',
-            'how_it_works': [
-                '1. Attacker uploads a wordlist file',
-                '2. Systematically tries each password',
-                '3. Stops when password is found or list exhausted',
-                '4. Can be interrupted at any time'
-            ],
-            'why_effective': [
-                'Many users choose weak, common passwords',
-                'Password reuse across multiple sites',
-                'Predictable password patterns',
-                'Human tendency to choose memorable words'
-            ],
-            'defenses': [
-                'Use strong, unique passwords',
-                'Enable account lockout policies',
-                'Implement rate limiting',
-                'Use multi-factor authentication (MFA)',
-                'Monitor for suspicious login attempts',
-                'Use password managers'
-            ]
         }

@@ -34,6 +34,7 @@
             font-weight: 700;
             background: var(--gradient-danger);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -87,39 +88,88 @@
                     <div class="mitm-animation-container">
                         <div class="connection-line"></div>
                         <div class="node">
-                            <div class="node-icon"><i class="ri-user-3-line"></i></div>
-                            <div class="node-label">Sender</div>
+                            <div class="node-icon"
+                                style="background:var(--bg-card); border: 1px solid var(--neon-cyan)"><i
+                                    class="ri-user-3-line"></i></div>
+                            <div class="node-label">Alice (Sender)</div>
                         </div>
                         <div class="node">
-                            <div class="node-icon"><i class="ri-spy-line"></i></div>
-                            <div class="node-label">Attacker</div>
+                            <div class="node-icon" style="background:var(--bg-card); border: 1px solid var(--neon-red)">
+                                <i class="ri-spy-line"></i>
+                            </div>
+                            <div class="node-label">Eve (Attacker)</div>
                         </div>
                         <div class="node">
-                            <div class="node-icon"><i class="ri-bank-line"></i></div>
-                            <div class="node-label">Receiver</div>
+                            <div class="node-icon"
+                                style="background:var(--bg-card); border: 1px solid var(--neon-cyan)"><i
+                                    class="ri-bank-line"></i></div>
+                            <div class="node-label">Bob (Receiver)</div>
                         </div>
-                        <div id="mitm-packet" class="packet"></div>
+                        <div id="mitm-packet" class="packet"
+                            style="background:var(--neon-purple); box-shadow: 0 0 10px var(--neon-purple)"></div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Message to Send</label>
-                        <textarea id="mitm-message" class="form-textarea"
-                            placeholder="Enter message to send"></textarea>
+                    <div class="grid grid-2" style="gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Message to Send</label>
+                            <textarea id="mitm-message" class="form-textarea" placeholder="Enter message to send"
+                                style="height: 100px;"></textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Security Settings (Alice)</label>
+                            <div
+                                style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div class="form-group">
+                                    <label style="font-size: 0.8rem; opacity: 0.7;">Algorithm</label>
+                                    <select id="mitm-algo-select" class="form-input"
+                                        style="background: var(--bg-secondary); margin-top: 4px;">
+                                        <option value="plaintext">None (Plaintext)</option>
+                                        <option value="caesar">Caesar Cipher</option>
+                                        <option value="hill">Hill Cipher (2x2)</option>
+                                    </select>
+                                </div>
+                                <div id="mitm-key-container" class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size: 0.8rem; opacity: 0.7;">Key / Shift</label>
+                                    <input type="text" id="mitm-key" class="form-input" placeholder="e.g., 3 or 3,2,1,4"
+                                        style="background: var(--bg-secondary); margin-top: 4px;">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <button class="btn btn-primary" onclick="startMITM()">🚀 Send Message</button>
 
                     <div id="intercept-panel" class="hidden">
                         <h3 class="text-danger mb-2"><i class="ri-alert-line"></i> Message Intercepted!</h3>
-                        <p class="text-secondary mb-3">You have intercepted the message. You can modify it before
-                            forwarding.</p>
+                        <p class="text-secondary mb-3">You have intercepted the packet. You can decrypt it if you know
+                            the key, or modify it before forwarding.</p>
 
                         <div class="form-group">
-                            <label class="form-label">Intercepted Message Content</label>
-                            <textarea id="intercepted-text" class="form-textarea"></textarea>
+                            <label class="form-label">Intercepted Ciphertext (Packet Content)</label>
+                            <textarea id="intercepted-text" class="form-textarea"
+                                style="border-color: var(--neon-red); color: var(--neon-red); font-family: 'Fira Code', monospace;"></textarea>
+                        </div>
+
+                        <div id="mitm-decrypt-tool"
+                            style="background: rgba(255,51,102,0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px dashed var(--neon-red);">
+                            <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.8rem; font-weight: bold; color: var(--neon-red);">🕵️
+                                        Decrypt Tool (Attacker)</label>
+                                    <input type="text" id="mitm-attacker-key" class="form-input"
+                                        placeholder="Enter key to decrypt..."
+                                        style="background: var(--bg-card); height: 36px; margin-top: 4px;">
+                                </div>
+                                <button class="btn btn-outline"
+                                    style="height: 36px; border-color: var(--neon-red); color: #fff;"
+                                    onclick="mitmAttackerDecrypt()">Decrypt</button>
+                            </div>
+                            <div id="mitm-decrypted-preview" class="mt-2 text-secondary"
+                                style="font-size: 0.85rem; font-style: italic;"></div>
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button class="btn btn-danger" onclick="forwardMessage()">📤 Forward to Receiver</button>
+                            <button class="btn btn-danger" onclick="forwardMessage()">📤 Forward Modified
+                                Packet</button>
                             <button class="btn btn-outline" onclick="cancelMITM()">❌ Drop Packet</button>
                         </div>
                     </div>
@@ -137,10 +187,30 @@
                         <label class="form-label">Target Password</label>
                         <input type="text" id="dict-password" class="form-input" placeholder="Enter password to crack">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Wordlist File <span style="color:var(--neon-red)">*</span></label>
-                        <input type="file" id="dict-file" class="form-input" accept=".txt">
-                        <div class="form-text">Required — upload a .txt file with one password per line</div>
+                    <div class="attack-selector">
+                        <label>Attack Mode:</label>
+                        <select id="dict-case-select" onchange="updateDictModeInfo()">
+                            <option value="case1">Case 1: 3 chars {2,3,4}</option>
+                            <option value="case2">Case 2: 5 digits {0-9}</option>
+                            <option value="case3">Case 3: 6 mixed chars (Sample)</option>
+                        </select>
+                    </div>
+
+                    <div class="attack-selector">
+                        <label>Wordlist File (.txt):</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="dict-file" class="form-input" accept=".txt">
+                        </div>
+                        <div class="form-text mt-1" style="font-size: 0.8rem; opacity: 0.8;">
+                            Required — upload a dictionary file to proceed
+                        </div>
+                    </div>
+
+                    <div id="dict-case-info" class="hidden mb-3">
+                        <div class="alert alert-info" style="font-size: 0.9rem; padding: 0.75rem;">
+                            <i class="ri-information-line"></i> This mode uses a pre-generated wordlist file on the
+                            server.
+                        </div>
                     </div>
 
                     <!-- Live timer + progress bar shown during attack -->

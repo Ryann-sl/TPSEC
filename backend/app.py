@@ -440,22 +440,31 @@ def attack_mitm():
 
 @app.route('/api/attack/dictionary/start', methods=['POST'])
 def attack_dictionary_start():
-    """Start a dictionary attack session (wordlist sent as JSON array)"""
+    """Start a dictionary attack session using a user-provided wordlist and case mode"""
     data = request.get_json()
     try:
         target_password = data.get('password', '').strip()
-        wordlist = data.get('wordlist', [])
+        case_id = data.get('case_id')
+        wordlist = data.get('wordlist')
 
         if not target_password:
             return jsonify({'success': False, 'message': 'Password is required'}), 400
-        if not wordlist:
-            return jsonify({'success': False, 'message': 'Wordlist file is required'}), 400
+        
+        if not wordlist or not isinstance(wordlist, list):
+            return jsonify({'success': False, 'message': 'Please implement a file (Wordlist required)'}), 400
 
-        session_id = DictionaryAttack.create_session(target_password, wordlist)
+        # Create session using the provided wordlist
+        session_id = DictionaryAttack.create_session(target_password, wordlist=wordlist)
+        
+        # We can still track the case_id in logs if needed, but the wordlist is primary
+        session = DictionaryAttack.get_session(session_id)
+        if session and case_id:
+            DictionaryAttack._log(session, f"📁 Attack Mode selected: {case_id.upper()}")
+
         return jsonify({'success': True, 'session_id': session_id}), 200
 
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 400
+        return jsonify({'success': False, 'message': f'Backend error: {str(e)}'}), 500
 
 
 @app.route('/api/attack/dictionary/poll/<session_id>', methods=['GET'])
@@ -470,7 +479,6 @@ def attack_dictionary_poll(session_id):
         'attempts': session['attempts'],
         'total': session['total'],
         'found': session['found'],
-        'stopped': session['stopped'],
         'paused': session['paused'],
         'done': session['done'],
         'elapsed': session['elapsed'],

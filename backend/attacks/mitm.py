@@ -33,52 +33,59 @@ class MITMAttack:
                 logs_callback(message)
         
         log("🎯 MITM Attack Initiated")
+        log("🌐 Monitoring network interface 'eth0'...")
+        time.sleep(0.1)
+        log("💉 Executing ARP Poisoning (Gateway <-> Target)...")
+        time.sleep(0.2)
+        log("🔌 Routing table redirected: All traffic passing through attacker machine")
         log(f"📡 Intercepted encrypted message: {encrypted_message}")
-        log(f"🔍 Detected algorithm: {algorithm.upper()}")
+        log(f"🔍 Analyzing packet headers... Detected algorithm: {algorithm.upper()}")
         if key:
-            log(f"🔑 Key/Shift detected: {key}")
-        log("⚠️  Attempting to intercept communication...")
+            log(f"🔑 Key/Shift detected in memory: {key}")
+        log("⚠️  Message successfully captured and held for inspection")
         
         if algorithm == 'plaintext':
             log("✅ Plaintext message intercepted!")
             log("🔓 Message is NOT encrypted - reading content...")
             log(f"👀 Content: {encrypted_message}")
         else:
-            log("✅ Message successfully intercepted!")
-            log("🔐 Message is encrypted - cannot read plaintext")
+            log("🔒 Message is encrypted - plaintext payload is opaque")
         
-        log("💡 Attacker can:")
+        log("\n💡 Possible Attacker Actions:")
         if algorithm == 'plaintext':
-             log("   - Read sensitive information")
+             log("   [READ] Sensitive information visible")
         else:
-             log("   - Read encrypted content (but not plaintext)")
-        log("   - Modify message")
-        log("   - Block message delivery")
+             log("   [SNIFF] Metadata and encrypted content visible")
+        log("   [MODIFY] Change message before forwarding")
+        log("   [DROP] Block message delivery (DoS)")
         
-        # Check if user provided a modified message
-        if modified_message is not None:
-            log(f"⚠️  Attacker manually modified the message")
-            log(f"📤 Original: {encrypted_message}")
-            log(f"📥 Modified: {modified_message}")
-        else:
-            # Simulate modification attempt
-            log("\n🛠️  Attempting message modification...")
-            time.sleep(0.3)
-            
-            # Randomly modify some characters
-            modified = list(encrypted_message)
-            if len(modified) > 2:
-                pos = random.randint(0, len(modified) - 1)
-                original_char = modified[pos]
-                modified[pos] = chr((ord(modified[pos]) + 1 - ord('A')) % 26 + ord('A')) if modified[pos].isalpha() else modified[pos]
-                modified_message = ''.join(modified)
+        # Simulation of Receiver (Bob)
+        from crypto_algorithms.caesar import CaesarCipher
+        from crypto_algorithms.hill import HillCipher
+        from crypto_algorithms.playfair import PlayfairCipher
+
+        log("\n🏁 Receiver (Bob) Phase:")
+        final_message = modified_message if modified_message is not None else encrypted_message
+        receiver_plaintext = final_message
+
+        if algorithm != 'plaintext' and key:
+            try:
+                if algorithm == 'caesar':
+                    receiver_plaintext = CaesarCipher.decrypt(final_message, int(key))
+                elif algorithm == 'hill':
+                    receiver_plaintext = HillCipher.decrypt(final_message, key)
+                elif algorithm == 'playfair':
+                    receiver_plaintext = PlayfairCipher.decrypt(final_message, key)
                 
-                log(f"⚠️  Modified character at position {pos}: '{original_char}' → '{modified[pos]}'")
-                log(f"📤 Modified message: {modified_message}")
-            else:
-                modified_message = encrypted_message
-                log("⚠️  Message too short to modify safely")
-        
+                log(f"📥 Bob received ciphertext: {final_message}")
+                log(f"🔑 Bob uses shared key to decrypt...")
+                log(f"📄 Bob's Result: {receiver_plaintext}")
+            except Exception as e:
+                log(f"❌ Bob's decryption failed/corrupted: {str(e)}")
+                receiver_plaintext = "[CORRUPTED DATA]"
+        else:
+            log(f"📥 Bob received plaintext: {final_message}")
+
         log("\n🛡️  DEFENSE: Use TLS/SSL to prevent MITM attacks!")
         log("🔒 End-to-end encryption protects against interception")
         
@@ -86,6 +93,7 @@ class MITMAttack:
             'success': True,
             'intercepted_message': encrypted_message,
             'modified_message': modified_message,
+            'receiver_plaintext': receiver_plaintext,
             'algorithm': algorithm,
             'logs': logs,
             'defense_recommendation': 'Use TLS/SSL and certificate pinning'
