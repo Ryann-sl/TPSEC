@@ -399,9 +399,9 @@ function buildTerminalShell(attackType) {
                 <span class="terminal-dot green"></span>
             </div>
             <div class="terminal-timer" id="timer-${attackType}">Running...</div>
-            <button class="terminal-refresh" onclick="clearResults('dictionary-results')">Refresh ↺</button>
+            <button class="terminal-refresh" onclick="clearResults('${attackType}-results')">Refresh ↺</button>
         </div>
-        <div class="terminal-body" id="dict-terminal-body" style="max-height:320px; overflow-y:auto;"></div>
+        <div class="terminal-body" id="${attackType}-terminal-body" style="max-height:320px; overflow-y:auto;"></div>
     </div>`;
 }
 
@@ -419,33 +419,194 @@ function readFile(file) {
 
 // ==================== BRUTE FORCE ====================
 
+let currentBruteMode = 3; // Default to Mode 3
+let bruteAbortController = null;
+let bruteIsPaused = false;
+let bruteSessionId = null;
+
+function setBruteMode(mode) {
+    currentBruteMode = mode;
+
+    // Update button UI
+    document.querySelectorAll('[id^="btn-mode-"]').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+    });
+
+    const activeBtn = document.getElementById(`btn-mode-${mode}`);
+    if (activeBtn) {
+        activeBtn.classList.remove('btn-outline');
+        activeBtn.classList.add('btn-primary');
+    }
+}
+
+// Initialize the default active mode button on load
+document.addEventListener('DOMContentLoaded', () => {
+    setBruteMode(3);
+});
 
 async function runBruteForce() {
     if (activeAttack) return;
+
+    const password = document.getElementById('brute-message').value.trim();
+    // === Mode config ===
+    const modeConfig = {
+        3: { length: 3, charset: '234', label: "Mode 3 — exactly 3 chars, only '2', '3', or '4'" },
+        5: { length: 5, charset: '0123456789', label: "Mode 5 — exactly 5 chars, only digits (0-9)" },
+        6: { length: 6, charset: null, label: "Mode 6 — exactly 6 chars, alphanumeric + special chars" }
+    };
+    const mode = modeConfig[currentBruteMode];
+
+    // === Length validation ===
+    if (password.length !== mode.length) {
+        alert(`⚠️ Password length mismatch!\n\n${mode.label}\n\nYou entered ${password.length} character(s). Please enter exactly ${mode.length} character(s).`);
+        return;
+    }
+
+    // === Character validation ===
+    if (mode.charset !== null) {
+        const invalidChars = [...password].filter(c => !mode.charset.includes(c));
+        if (invalidChars.length > 0) {
+            alert(`⚠️ Invalid character(s) detected: [ ${[...new Set(invalidChars)].join(', ')} ]\n\n${mode.label}`);
+            return;
+        }
+    } else {
+        // Mode 6: ensure no character is completely outside printable ASCII
+        const invalidChars = [...password].filter(c => c.charCodeAt(0) < 32 || c.charCodeAt(0) > 126);
+        if (invalidChars.length > 0) {
+            alert(`⚠️ Invalid character(s) detected. Mode 6 only allows printable ASCII characters.`);
+            return;
+        }
+    }
+
     activeAttack = 'bruteforce';
 
-    const message = document.getElementById('brute-message').value;
     const results = document.getElementById('bruteforce-results');
+    results.innerHTML = buildTerminalShell('bruteforce');
 
-    results.innerHTML = '<div class="loading-spinner"></div>';
+    // Declare at outer scope so catch/finally can access them
+    const termBody = results.querySelector('.terminal-body');
+    const termTimer = results.querySelector('.terminal-timer');
+    termTimer.textContent = 'Running...';
+
+    // Show stop/pause, hide start
+    document.getElementById('brute-start-btn').style.display = 'none';
+    document.getElementById('brute-pause-btn').style.display = 'inline-flex';
+    document.getElementById('brute-pause-btn').textContent = '⏸ Pause';
+    document.getElementById('brute-stop-btn').style.display = 'inline-flex';
+
+    bruteIsPaused = false;
+    bruteSessionId = null;
+    bruteAbortController = new AbortController();
+
     startTimer('bruteforce');
 
+    function appendLog(text) {
+        const div = document.createElement('div');
+        div.className = 'terminal-line';
+        div.innerHTML = `<span class="text-secondary">[${new Date().toLocaleTimeString()}]</span> ${text}`;
+        termBody.appendChild(div);
+        termBody.scrollTop = termBody.scrollHeight;
+    }
+
     try {
-        const data = await apiRequest('/attack/bruteforce', {
+        const response = await fetch('/api/attack/bruteforce', {
             method: 'POST',
-            body: JSON.stringify({ ciphertext: message, algorithm: 'caesar' })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ password, algorithm: 'raw', mode: currentBruteMode }),
+            signal: bruteAbortController.signal
         });
 
-        if (data && data.success) {
-            displayBruteForceResults(data.result, 'bruteforce-results');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Keep incomplete last line
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                try {
+                    const event = JSON.parse(line.substring(6));
+
+                    // Read session ID from first SSE event
+                    if (event.session_id && !bruteSessionId) {
+                        bruteSessionId = event.session_id;
+                    }
+
+                    if (event.type === 'done') {
+                        termTimer.textContent = `Done in ${Number(event.message.time).toFixed(2)}s`;
+                    } else {
+                        appendLog(String(event.message));
+                    }
+                } catch (e) {
+                    // Ignore malformed SSE lines
+                }
+            }
         }
     } catch (error) {
-        results.innerHTML = '<div class="alert alert-error">Attack failed</div>';
+        if (error.name === 'AbortError') {
+            appendLog('🛑 ATTACK ABORTED BY USER');
+            termTimer.textContent = 'Aborted';
+        } else {
+            appendLog(`❌ Error: ${error.message}`);
+        }
     } finally {
         activeAttack = null;
+        bruteAbortController = null;
         stopTimer('bruteforce');
+
+        // Reset buttons
+        document.getElementById('brute-start-btn').style.display = 'inline-flex';
+        document.getElementById('brute-pause-btn').style.display = 'none';
+        document.getElementById('brute-stop-btn').style.display = 'none';
     }
 }
+
+async function stopBruteForce() {
+    if (bruteAbortController) {
+        bruteAbortController.abort();
+    }
+    if (bruteSessionId) {
+        fetch(`/api/attack/bruteforce/stop/${bruteSessionId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        }).catch(() => { });
+    }
+}
+
+async function togglePauseBruteForce() {
+    bruteIsPaused = !bruteIsPaused;
+    const pauseBtn = document.getElementById('brute-pause-btn');
+
+    if (bruteIsPaused) {
+        pauseBtn.textContent = '▶ Resume';
+        if (bruteSessionId) {
+            fetch(`/api/attack/bruteforce/pause/${bruteSessionId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            }).catch(() => { });
+        }
+    } else {
+        pauseBtn.textContent = '⏸ Pause';
+        if (bruteSessionId) {
+            fetch(`/api/attack/bruteforce/resume/${bruteSessionId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            }).catch(() => { });
+        }
+    }
+}
+
+
 
 // ==================== TERMINAL & UTILS ====================
 

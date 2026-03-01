@@ -179,11 +179,31 @@
                 <h2>💥 Brute Force Attack Simulation</h2>
                 <div id="bruteforce-form">
                     <div class="form-group">
-                        <label class="form-label">Encrypted Message (Caesar Cipher)</label>
-                        <textarea id="brute-message" class="form-textarea"
-                            placeholder="Enter Caesar encrypted message"></textarea>
+                        <label class="form-label">Target Password</label>
+                        <input type="text" id="brute-message" class="form-input"
+                            placeholder="Enter target password based on selected mode below">
                     </div>
-                    <button class="btn btn-danger" onclick="runBruteForce()">💥 Crack Encryption</button>
+
+                    <div class="form-group">
+                        <label class="form-label">Restriction Mode</label>
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 1rem;">
+                            <button id="btn-mode-3" class="btn btn-outline" style="flex:1"
+                                onclick="setBruteMode(3)">Mode 3 (2, 3, 4)</button>
+                            <button id="btn-mode-5" class="btn btn-outline" style="flex:1"
+                                onclick="setBruteMode(5)">Mode 5 (0-9)</button>
+                            <button id="btn-mode-6" class="btn btn-outline" style="flex:1"
+                                onclick="setBruteMode(6)">Mode 6 (A-Z,0-9, +*etc)</button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                        <button id="brute-start-btn" class="btn btn-danger" onclick="runBruteForce()">💥 Crack
+                            Password</button>
+                        <button id="brute-pause-btn" class="btn btn-outline" onclick="togglePauseBruteForce()"
+                            style="display:none; border-color:#f0a500; color:#f0a500;">⏸ Pause</button>
+                        <button id="brute-stop-btn" class="btn btn-outline" onclick="stopBruteForce()"
+                            style="display:none; border-color:var(--neon-red); color:var(--neon-red);">⏹ Stop</button>
+                    </div>
                 </div>
                 <div id="bruteforce-results" class="mt-3"></div>
             </div>
