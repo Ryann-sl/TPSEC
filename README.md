@@ -135,6 +135,3 @@ This platform is designed for educational purposes to help students:
 
 MIT License - Educational Project
 
-## Contributors
-
-PFE Project - Final Year Computer Science
