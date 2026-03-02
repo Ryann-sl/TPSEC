@@ -19,12 +19,14 @@ from crypto_algorithms.playfair import PlayfairCipher
 from attacks.mitm import MITMAttack
 from attacks.dictionary import DictionaryAttack
 from attacks.bruteforce import BruteForceAttack
+from auth.rate_limiter import RateLimiter
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)
 
-# Initialize auth handler
+# Initialize auth handler and rate limiter
 auth_handler = AuthHandler()
+login_rate_limiter = RateLimiter(max_attempts=5, window_seconds=900)
 
 # Database path
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'database', 'security.db')
@@ -87,9 +89,23 @@ def login():
     username = data.get('username')
     password = data.get('password')
     
+    if not username:
+        return jsonify({'success': False, 'message': 'Username is required'}), 400
+
+    # Check rate limit
+    allowed, remaining, retry_after = login_rate_limiter.check_rate_limit(username)
+    if not allowed:
+        return jsonify({
+            'success': False, 
+            'message': f'Too many failed attempts. Please try again in {retry_after // 60} minutes and {retry_after % 60} seconds.',
+            'retry_after': retry_after
+        }), 429
+    
     success, message, token, user_id = auth_handler.login_user(username, password)
     
     if success:
+        # Reset attempts on success
+        login_rate_limiter.reset_attempts(username)
         return jsonify({
             'success': True,
             'message': message,
@@ -98,9 +114,15 @@ def login():
             'username': username
         }), 200
     else:
+        # Record failed attempt
+        login_rate_limiter.record_failed_attempt(username)
+        # Recalculate remaining for the message
+        _, remaining, _ = login_rate_limiter.check_rate_limit(username)
+        
         return jsonify({
             'success': False,
-            'message': message
+            'message': f'{message}. {remaining} attempts remaining before block.',
+            'remaining_attempts': remaining
         }), 401
 
 @app.route('/api/users', methods=['GET'])
