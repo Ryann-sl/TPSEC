@@ -442,12 +442,10 @@ def attack_mitm():
     data = request.get_json()
     
     try:
-        encrypted_message = data.get('encrypted_message', '')
-        algorithm = data.get('algorithm', 'caesar')
+        message = data.get('encrypted_message', '')
         modified_message = data.get('modified_message')
-        key = data.get('key')
         
-        result = MITMAttack.simulate_interception(encrypted_message, algorithm, modified_message, key)
+        result = MITMAttack.simulate_interception(message, modified_message)
         
         return jsonify({
             'success': True,
