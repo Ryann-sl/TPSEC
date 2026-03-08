@@ -63,11 +63,12 @@ def init_database():
     conn.commit()
     conn.close()
     
-    print(f"✅ Database initialized successfully at: {db_path}")
-    print("📊 Tables created:")
-    print("   - users")
-    print("   - messages")
-    print("   - attack_logs")
+    print(f"Database initialized successfully at: {db_path}")
+    print("Tables created:")
+    print("- users")
+    print("- messages")
+    print("- attack_logs")
+    print("\nReady to run the application!")
 
 if __name__ == "__main__":
     init_database()
