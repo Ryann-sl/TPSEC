@@ -443,12 +443,10 @@ def attack_mitm():
     data = request.get_json()
     
     try:
-        encrypted_message = data.get('encrypted_message', '')
-        algorithm = data.get('algorithm', 'caesar')
+        message = data.get('encrypted_message', '')
         modified_message = data.get('modified_message')
-        key = data.get('key')
         
-        result = MITMAttack.simulate_interception(encrypted_message, algorithm, modified_message, key)
+        result = MITMAttack.simulate_interception(message, modified_message)
         
         return jsonify({
             'success': True,
@@ -473,6 +471,9 @@ def attack_dictionary_start():
         if not target_password:
             return jsonify({'success': False, 'message': 'Password is required'}), 400
         
+        if case_id != 'case1':
+            return jsonify({'success': False, 'message': 'please use bruteforce'}), 400
+
         if not wordlist or not isinstance(wordlist, list):
             return jsonify({'success': False, 'message': 'Please implement a file (Wordlist required)'}), 400
 

@@ -250,14 +250,39 @@ let dictStartTime = null; // start time of the attack
 let dictRenderedLogs = 0; // number of logs rendered
 let dictIsPaused = false;  // client-side tracking of pause state
 
-function updateDictModeInfo() {
+let currentDictMode = 'case1';
 
+function setDictMode(mode) {
+    if (mode === 'case2' || mode === 'case3') {
+        alert('please use bruteforce');
+        return;
+    }
+
+    currentDictMode = mode;
+
+    // Update button UI
+    document.querySelectorAll('[id^="dict-btn-mode-"]').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+    });
+
+    const modeNumber = mode === 'case1' ? 3 : (mode === 'case2' ? 5 : 6);
+    const activeBtn = document.getElementById(`dict-btn-mode-${modeNumber}`);
+    if (activeBtn) {
+        activeBtn.classList.remove('btn-outline');
+        activeBtn.classList.add('btn-primary');
+    }
+
+    updateDictModeInfo();
+}
+
+function updateDictModeInfo() {
     document.getElementById('dict-case-info').classList.remove('hidden');
 }
 
 async function startDictionary() {
     const password = document.getElementById('dict-password').value;
-    const caseId = document.getElementById('dict-case-select').value;
+    const caseId = currentDictMode;
     const fileInput = document.getElementById('dict-file');
     const file = fileInput.files[0];
 
@@ -584,9 +609,10 @@ function setBruteMode(mode) {
     }
 }
 
-// Initialize the default active mode button on load
+// Initialize the default active mode buttons on load
 document.addEventListener('DOMContentLoaded', () => {
     setBruteMode(3);
+    setDictMode('case1');
 });
 
 async function runBruteForce() {
