@@ -16,7 +16,7 @@ from auth.auth_handler import AuthHandler
 from crypto_algorithms.caesar import CaesarCipher
 from crypto_algorithms.hill import HillCipher
 from crypto_algorithms.playfair import PlayfairCipher
-from crypto_algorithms.steganography import stego
+from crypto_algorithms.steganography import img_stego, audio_stego, video_stego
 from attacks.mitm import MITMAttack
 from attacks.dictionary import DictionaryAttack
 from attacks.bruteforce import BruteForceAttack
@@ -617,140 +617,151 @@ def info_bruteforce():
 
 # ==================== STEGANOGRAPHY ====================
 
+from crypto_algorithms.steganography import img_stego, audio_stego, video_stego
+from attacks.mitm import MITMAttack
+# ... (existing imports)
+
+# ==================== STEGANOGRAPHY ====================
+
 @app.route('/api/steganography/encode', methods=['POST'])
 def steganography_encode():
     """Encode message in image using steganography"""
     try:
         token = request.headers.get('Authorization', '').replace('Bearer ', '')
         payload = verify_token_middleware(token)
-        
         if not payload:
             return jsonify({'error': 'Invalid or missing token'}), 401
         
-        # Check if file is uploaded
         if 'image' not in request.files:
             return jsonify({'error': 'No image file provided'}), 400
         
         file = request.files['image']
-        if file.filename == '':
-            return jsonify({'error': 'No image file selected'}), 400
-        
         message = request.form.get('message', '')
-        if not message:
-            return jsonify({'error': 'No message provided'}), 400
         
-        # Save uploaded file temporarily with better cleanup
         import tempfile
-        import os
-        
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
             file.save(temp_file.name)
-            
-            # Encode message
-            result = stego.encode_message(temp_file.name, message)
-        
-        # Clean up temp file
-        try:
-            os.unlink(temp_file.name)
-        except:
-            pass
-            
-        if result['success']:
-            return jsonify(result), 200
-        else:
-            return jsonify(result), 400
-                
+            result = img_stego.encode_message(temp_file.name, message)
+        os.unlink(temp_file.name)
+        return jsonify(result), (200 if result['success'] else 400)
     except Exception as e:
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/steganography/decode', methods=['POST'])
 def steganography_decode():
-    """Decode message from steganographic image"""
+    """Decode message from image"""
     try:
         token = request.headers.get('Authorization', '').replace('Bearer ', '')
         payload = verify_token_middleware(token)
-        
         if not payload:
             return jsonify({'error': 'Invalid or missing token'}), 401
         
-        # Check if file is uploaded
         if 'image' not in request.files:
             return jsonify({'error': 'No image file provided'}), 400
         
         file = request.files['image']
-        if file.filename == '':
-            return jsonify({'error': 'No image file selected'}), 400
-        
-        # Save uploaded file temporarily with better cleanup
         import tempfile
-        import os
-        
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
             file.save(temp_file.name)
-            
-            # Decode message
-            result = stego.decode_message(temp_file.name)
-        
-        # Clean up temp file
-        try:
-            os.unlink(temp_file.name)
-        except:
-            pass
-            
-        if result['success']:
-            return jsonify(result), 200
-        else:
-            return jsonify(result), 400
-                
+            result = img_stego.decode_message(temp_file.name)
+        os.unlink(temp_file.name)
+        return jsonify(result), (200 if result['success'] else 400)
     except Exception as e:
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
-@app.route('/api/steganography/analyze', methods=['POST'])
-def steganography_analyze():
-    """Analyze image for steganography"""
+@app.route('/api/steganography/audio/encode', methods=['POST'])
+def steganography_audio_encode():
+    """Encode message in audio (WAV)"""
     try:
         token = request.headers.get('Authorization', '').replace('Bearer ', '')
         payload = verify_token_middleware(token)
-        
         if not payload:
             return jsonify({'error': 'Invalid or missing token'}), 401
         
-        # Check if file is uploaded
-        if 'image' not in request.files:
-            return jsonify({'error': 'No image file provided'}), 400
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio file provided'}), 400
         
-        file = request.files['image']
-        if file.filename == '':
-            return jsonify({'error': 'No image file selected'}), 400
+        file = request.files['audio']
+        message = request.form.get('message', '')
         
-        # Save uploaded file temporarily with better cleanup
         import tempfile
-        import os
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
             file.save(temp_file.name)
-            
-            # Analyze image
-            result = stego.analyze_image(temp_file.name)
-        
-        # Clean up temp file
-        try:
-            os.unlink(temp_file.name)
-        except:
-            pass
-            
-        if result['success']:
-            return jsonify(result), 200
-        else:
-            return jsonify(result), 400
-                
+            result = audio_stego.encode_message(temp_file.name, message)
+        os.unlink(temp_file.name)
+        return jsonify(result), (200 if result['success'] else 400)
     except Exception as e:
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
 
-@app.route('/api/info/steganography', methods=['GET'])
-def info_steganography():
-    """Get steganography information"""
-    return jsonify(stego.get_technique_info()), 200
+@app.route('/api/steganography/audio/decode', methods=['POST'])
+def steganography_audio_decode():
+    """Decode message from audio"""
+    try:
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        payload = verify_token_middleware(token)
+        if not payload:
+            return jsonify({'error': 'Invalid or missing token'}), 401
+        
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio file provided'}), 400
+        
+        file = request.files['audio']
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+            file.save(temp_file.name)
+            result = audio_stego.decode_message(temp_file.name)
+        os.unlink(temp_file.name)
+        return jsonify(result), (200 if result['success'] else 400)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/steganography/video/encode', methods=['POST'])
+def steganography_video_encode():
+    """Encode message in video (AVI/MP4)"""
+    try:
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        payload = verify_token_middleware(token)
+        if not payload:
+            return jsonify({'error': 'Invalid or missing token'}), 401
+        
+        if 'video' not in request.files:
+            return jsonify({'error': 'No video file provided'}), 400
+        
+        file = request.files['video']
+        message = request.form.get('message', '')
+        
+        import tempfile
+        suffix = os.path.splitext(file.filename)[1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+            file.save(temp_file.name)
+            result = video_stego.encode_message(temp_file.name, message)
+        os.unlink(temp_file.name)
+        return jsonify(result), (200 if result['success'] else 400)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/steganography/video/decode', methods=['POST'])
+def steganography_video_decode():
+    """Decode message from video"""
+    try:
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        payload = verify_token_middleware(token)
+        if not payload:
+            return jsonify({'error': 'Invalid or missing token'}), 401
+        
+        if 'video' not in request.files:
+            return jsonify({'error': 'No video file provided'}), 400
+        
+        file = request.files['video']
+        import tempfile
+        suffix = os.path.splitext(file.filename)[1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+            file.save(temp_file.name)
+            result = video_stego.decode_message(temp_file.name)
+        os.unlink(temp_file.name)
+        return jsonify(result), (200 if result['success'] else 400)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # ==================== RUN SERVER ====================
 
