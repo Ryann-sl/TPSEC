@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Steganography - Cyber Security Learning Platform</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -37,25 +41,25 @@
                 <!-- Section Header -->
                 <div class="section-header">
                     <h2 class="section-title">
-                        <span class="title-icon">🖼️</span>
-                        Image Steganography
+                        <span class="title-icon">📂</span>
+                        Multi-Media Steganography
                     </h2>
-                    <p class="section-subtitle">Hide secret messages inside images using LSB technique</p>
+                    <p class="section-subtitle">Hide secret messages inside Images, Audio, or Video</p>
                 </div>
 
                 <!-- Tab Navigation -->
                 <div class="tab-navigation">
-                    <button class="tab-btn active" onclick="switchTab('encode')">
-                        <span class="tab-icon">📝</span>
-                        Hide Message
+                    <button class="tab-btn active" onclick="switchTab('image')">
+                        <span class="tab-icon">🖼️</span>
+                        Image
                     </button>
-                    <button class="tab-btn" onclick="switchTab('decode')">
-                        <span class="tab-icon">🔍</span>
-                        Extract Message
+                    <button class="tab-btn" onclick="switchTab('audio')">
+                        <span class="tab-icon">🎵</span>
+                        Audio
                     </button>
-                    <button class="tab-btn" onclick="switchTab('analyze')">
-                        <span class="tab-icon">📊</span>
-                        Analyze Image
+                    <button class="tab-btn" onclick="switchTab('video')">
+                        <span class="tab-icon">🎥</span>
+                        Video
                     </button>
                     <button class="tab-btn" onclick="switchTab('info')">
                         <span class="tab-icon">📚</span>
@@ -63,212 +67,102 @@
                     </button>
                 </div>
 
-                <!-- Encode Tab -->
-                <div id="encode-tab" class="tab-content active">
+                <!-- Image Tab -->
+                <div id="image-tab" class="tab-content active">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">
-                                <span class="card-icon">📝</span>
-                                Hide Message in Image
-                            </h3>
+                            <h3 class="card-title"><span class="card-icon">🖼️</span> Image Steganography</h3>
                         </div>
                         <div class="card-body">
-                            <form id="encode-form" class="form">
+                            <form id="image-encode-form" class="form">
                                 <div class="form-group">
-                                    <label class="form-label" for="encode-image">Choose Cover Image</label>
-                                    <div class="file-upload-area" id="encode-file-area">
-                                        <input type="file" id="encode-image" accept="image/*" required>
-                                        <div class="file-upload-content">
-                                            <span class="file-upload-icon">📁</span>
-                                            <p class="file-upload-text">Click to upload image or drag and drop</p>
-                                            <p class="file-upload-subtitle">PNG, JPG, JPEG (Max 10MB)</p>
-                                        </div>
-                                    </div>
-                                    <div class="image-preview" id="encode-preview" style="display: none;">
-                                        <img id="encode-preview-img" src="" alt="Preview">
-                                        <button type="button" class="remove-image-btn" onclick="removeEncodeImage()">×</button>
-                                    </div>
+                                    <label class="form-label">Cover Image</label>
+                                    <input type="file" id="image-input" accept="image/*" class="form-input" required>
                                 </div>
-
                                 <div class="form-group">
-                                    <label class="form-label" for="encode-message">Secret Message</label>
-                                    <textarea id="encode-message" class="form-textarea" rows="4" placeholder="Enter your secret message here..." required></textarea>
-                                    <div class="form-hint">
-                                        <span id="message-length">0</span> / 1000 characters
-                                    </div>
+                                    <label class="form-label">Secret Message</label>
+                                    <textarea id="image-message" class="form-textarea" rows="3" required></textarea>
                                 </div>
-
-                                <button type="submit" class="btn btn-primary" id="encode-btn">
-                                    <span class="btn-icon">🔐</span>
-                                    Hide Message in Image
-                                </button>
+                                <button type="submit" class="btn btn-primary">Hide in Image</button>
                             </form>
-
-                            <div id="encode-result" class="result-section" style="display: none;">
-                                <h4 class="result-title">Message Hidden Successfully!</h4>
-                                <div class="result-stats">
-                                    <div class="stat-item">
-                                        <span class="stat-label">Image Size:</span>
-                                        <span class="stat-value" id="result-image-size">-</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <span class="stat-label">Message Length:</span>
-                                        <span class="stat-value" id="result-message-length">-</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <span class="stat-label">Capacity Used:</span>
-                                        <span class="stat-value" id="result-capacity">-</span>
-                                    </div>
+                            <hr>
+                            <form id="image-decode-form" class="form">
+                                <div class="form-group">
+                                    <label class="form-label">Image with Secret</label>
+                                    <input type="file" id="image-decode-input" accept="image/*" class="form-input"
+                                        required>
                                 </div>
-                                <div class="result-image">
-                                    <h5>Download Image with Hidden Message:</h5>
-                                    <img id="result-image" src="" alt="Encoded Image">
-                                    <button class="btn btn-success" onclick="downloadEncodedImage()">
-                                        <span class="btn-icon">⬇️</span>
-                                        Download Encoded Image
-                                    </button>
-                                </div>
-                            </div>
+                                <button type="submit" class="btn btn-secondary">Extract from Image</button>
+                            </form>
+                            <div id="image-result" class="result-box" style="display:none;"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Decode Tab -->
-                <div id="decode-tab" class="tab-content">
+                <!-- Audio Tab -->
+                <div id="audio-tab" class="tab-content">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">
-                                <span class="card-icon">🔍</span>
-                                Extract Hidden Message
-                            </h3>
+                            <h3 class="card-title"><span class="card-icon">🎵</span> Audio Steganography</h3>
                         </div>
                         <div class="card-body">
-                            <form id="decode-form" class="form">
+                            <form id="audio-encode-form" class="form">
                                 <div class="form-group">
-                                    <label class="form-label" for="decode-image">Choose Image with Hidden Message</label>
-                                    <div class="file-upload-area" id="decode-file-area">
-                                        <input type="file" id="decode-image" accept="image/*" required>
-                                        <div class="file-upload-content">
-                                            <span class="file-upload-icon">📁</span>
-                                            <p class="file-upload-text">Click to upload image or drag and drop</p>
-                                            <p class="file-upload-subtitle">PNG, JPG, JPEG (Max 10MB)</p>
-                                        </div>
-                                    </div>
-                                    <div class="image-preview" id="decode-preview" style="display: none;">
-                                        <img id="decode-preview-img" src="" alt="Preview">
-                                        <button type="button" class="remove-image-btn" onclick="removeDecodeImage()">×</button>
-                                    </div>
+                                    <label class="form-label">Cover Audio (WAV Only)</label>
+                                    <input type="file" id="audio-input" accept=".wav" class="form-input" required>
+                                    <small class="form-hint">Note: Only uncompressed .wav files are supported. MP3 will
+                                        not work with LSB.</small>
                                 </div>
-
-                                <button type="submit" class="btn btn-primary" id="decode-btn">
-                                    <span class="btn-icon">🔓</span>
-                                    Extract Hidden Message
-                                </button>
+                                <div class="form-group">
+                                    <label class="form-label">Secret Message</label>
+                                    <textarea id="audio-message" class="form-textarea" rows="3" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Hide in Audio</button>
                             </form>
-
-                            <div id="decode-result" class="result-section" style="display: none;">
-                                <h4 class="result-title">Hidden Message Found!</h4>
-                                <div class="result-stats">
-                                    <div class="stat-item">
-                                        <span class="stat-label">Bits Extracted:</span>
-                                        <span class="stat-value" id="decode-bits">-</span>
-                                    </div>
+                            <hr>
+                            <form id="audio-decode-form" class="form">
+                                <div class="form-group">
+                                    <label class="form-label">Audio with Secret</label>
+                                    <input type="file" id="audio-decode-input" accept="audio/wav" class="form-input"
+                                        required>
                                 </div>
-                                <div class="result-message">
-                                    <h5>Extracted Message:</h5>
-                                    <div class="message-display" id="extracted-message"></div>
-                                </div>
-                            </div>
+                                <button type="submit" class="btn btn-secondary">Extract from Audio</button>
+                            </form>
+                            <div id="audio-result" class="result-box" style="display:none;"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Analyze Tab -->
-                <div id="analyze-tab" class="tab-content">
+                <!-- Video Tab -->
+                <div id="video-tab" class="tab-content">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">
-                                <span class="card-icon">📊</span>
-                                Analyze Image
-                            </h3>
+                            <h3 class="card-title"><span class="card-icon">🎥</span> Video Steganography</h3>
                         </div>
                         <div class="card-body">
-                            <form id="analyze-form" class="form">
+                            <form id="video-encode-form" class="form">
                                 <div class="form-group">
-                                    <label class="form-label" for="analyze-image">Choose Image to Analyze</label>
-                                    <div class="file-upload-area" id="analyze-file-area">
-                                        <input type="file" id="analyze-image" accept="image/*" required>
-                                        <div class="file-upload-content">
-                                            <span class="file-upload-icon">📁</span>
-                                            <p class="file-upload-text">Click to upload image or drag and drop</p>
-                                            <p class="file-upload-subtitle">PNG, JPG, JPEG (Max 10MB)</p>
-                                        </div>
-                                    </div>
-                                    <div class="image-preview" id="analyze-preview" style="display: none;">
-                                        <img id="analyze-preview-img" src="" alt="Preview">
-                                        <button type="button" class="remove-image-btn" onclick="removeAnalyzeImage()">×</button>
-                                    </div>
+                                    <label class="form-label">Cover Video (MP4/AVI/etc.)</label>
+                                    <input type="file" id="video-input" accept="video/*" class="form-input" required>
+                                    <small class="form-hint">Output will be a lossless .avi file to preserve hidden
+                                        data.</small>
                                 </div>
-
-                                <button type="submit" class="btn btn-primary" id="analyze-btn">
-                                    <span class="btn-icon">🔍</span>
-                                    Analyze Image
-                                </button>
+                                <div class="form-group">
+                                    <label class="form-label">Secret Message</label>
+                                    <textarea id="video-message" class="form-textarea" rows="3" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Hide in Video</button>
                             </form>
-
-                            <div id="analyze-result" class="result-section" style="display: none;">
-                                <h4 class="result-title">Image Analysis Results</h4>
-                                
-                                <div class="analysis-section">
-                                    <h5>Image Information</h5>
-                                    <div class="info-grid">
-                                        <div class="info-item">
-                                            <span class="info-label">Size:</span>
-                                            <span class="info-value" id="analysis-size">-</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="info-label">Pixels:</span>
-                                            <span class="info-value" id="analysis-pixels">-</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="info-label">Mode:</span>
-                                            <span class="info-value" id="analysis-mode">-</span>
-                                        </div>
-                                    </div>
+                            <hr>
+                            <form id="video-decode-form" class="form">
+                                <div class="form-group">
+                                    <label class="form-label">Video with Secret</label>
+                                    <input type="file" id="video-decode-input" accept="video/*" class="form-input"
+                                        required>
                                 </div>
-
-                                <div class="analysis-section">
-                                    <h5>Capacity Information</h5>
-                                    <div class="info-grid">
-                                        <div class="info-item">
-                                            <span class="info-label">Max Capacity:</span>
-                                            <span class="info-value" id="analysis-max-bits">-</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="info-label">Max Characters:</span>
-                                            <span class="info-value" id="analysis-max-chars">-</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="info-label">Used:</span>
-                                            <span class="info-value" id="analysis-used">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="analysis-section">
-                                    <h5>Steganography Detection</h5>
-                                    <div class="detection-result" id="detection-result">
-                                        <div class="detection-status" id="detection-status">
-                                            <span class="status-icon">❓</span>
-                                            <span class="status-text">Analyzing...</span>
-                                        </div>
-                                        <div class="sample-bits" id="sample-bits" style="display: none;">
-                                            <h6>Sample LSB Bits:</h6>
-                                            <code id="sample-bits-code"></code>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                <button type="submit" class="btn btn-secondary">Extract from Video</button>
+                            </form>
+                            <div id="video-result" class="result-box" style="display:none;"></div>
                         </div>
                     </div>
                 </div>
@@ -285,21 +179,30 @@
                         <div class="card-body">
                             <div class="info-section">
                                 <h4>What is Steganography?</h4>
-                                <p>Steganography is the practice of hiding secret messages within other non-secret data, such as images, audio files, or videos. Unlike cryptography which scrambles messages to make them unreadable, steganography hides the very existence of the message.</p>
+                                <p>Steganography is the practice of hiding secret messages within other non-secret data,
+                                    such as images, audio files, or videos. Unlike cryptography which scrambles messages
+                                    to make them unreadable, steganography hides the very existence of the message.</p>
                             </div>
 
                             <div class="info-section">
                                 <h4>LSB (Least Significant Bit) Technique</h4>
-                                <p>The LSB technique works by modifying the least significant bits of image pixels to store message data. Since these bits contribute the least to the overall color value, changing them creates minimal visual differences that are imperceptible to the human eye.</p>
+                                <p>The LSB technique works by modifying the least significant bits of image pixels to
+                                    store message data. Since these bits contribute the least to the overall color
+                                    value, changing them creates minimal visual differences that are imperceptible to
+                                    the human eye.</p>
                             </div>
 
                             <div class="info-section">
                                 <h4>How It Works Step by Step:</h4>
                                 <ol class="step-list">
-                                    <li><strong>Convert Message to Binary:</strong> The secret message is converted to binary (0s and 1s).</li>
-                                    <li><strong>Extract LSBs:</strong> The least significant bits are extracted from each color channel (R, G, B) of image pixels.</li>
-                                    <li><strong>Replace LSBs:</strong> The message bits replace the LSBs of the image pixels.</li>
-                                    <li><strong>Result:</strong> The image looks identical but now contains hidden data.</li>
+                                    <li><strong>Convert Message to Binary:</strong> The secret message is converted to
+                                        binary (0s and 1s).</li>
+                                    <li><strong>Extract LSBs:</strong> The least significant bits are extracted from
+                                        each color channel (R, G, B) of image pixels.</li>
+                                    <li><strong>Replace LSBs:</strong> The message bits replace the LSBs of the image
+                                        pixels.</li>
+                                    <li><strong>Result:</strong> The image looks identical but now contains hidden data.
+                                    </li>
                                 </ol>
                             </div>
 
@@ -357,4 +260,5 @@
 
     <script src="js/steganography.js"></script>
 </body>
+
 </html>
