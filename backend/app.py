@@ -471,6 +471,9 @@ def attack_dictionary_start():
         if not target_password:
             return jsonify({'success': False, 'message': 'Password is required'}), 400
         
+        if case_id != 'case1':
+            return jsonify({'success': False, 'message': 'please use bruteforce'}), 400
+
         if not wordlist or not isinstance(wordlist, list):
             return jsonify({'success': False, 'message': 'Please implement a file (Wordlist required)'}), 400
 

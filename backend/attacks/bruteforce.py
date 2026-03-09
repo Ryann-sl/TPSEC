@@ -19,64 +19,69 @@ class BruteForceAttack:
 
     @classmethod
     def crack_password(cls, password, mode=3, session_id=None):
+        """Simplifed brute force simulation."""
         session_id = session_id or str(uuid.uuid4())
         cls.sessions[session_id] = {'paused': False, 'stopped': False}
-        
-        def log_evt(msg, type="log", extra=None):
+
+        def create_message(msg, type="log", data=None):
+            """Helpful function to format server messages."""
             payload = {'type': type, 'message': msg, 'timestamp': time.time()}
-            if extra: payload.update(extra)
+            if data: payload.update(data)
             return f"data: {json.dumps(payload)}\n\n"
 
-        yield log_evt("🎯 Password Brute Force Simulation", extra={'session_id': session_id})
-        
-        mode, length, chars = int(mode), 0, ""
+        yield create_message("🎯 Brute Force Attack Starting...", data={'session_id': session_id})
+
+        # --- STEP 1: Choose character set and length based on mode ---
+        mode = int(mode)
         if mode == 3:
             chars, length = "234", 3
         elif mode == 5:
             chars, length = string.digits, 5
         elif mode == 6:
-            chars, length = string.ascii_letters + string.digits + "+*!@#$%^&()-_=[]{}|;:,.<>?/", 6
+            chars = string.ascii_letters + string.digits + string.punctuation
+            length = 6
         else:
-            chars, length = string.ascii_letters + string.digits + string.punctuation, len(password)
+            chars, length = string.ascii_letters + string.digits, len(password)
 
-        yield log_evt(f"🚀 Mode {mode}: Length {length}, Charset Size {len(chars)}")
-        
+        yield create_message(f"🚀 Mode {mode}: Trying matches with length {length}...")
+
+        # --- STEP 2: The Main Loop 
         start_time = time.time()
         attempts = 0
-        
-        for guess_tuple in itertools.product(chars, repeat=length):
+
+        for combination in itertools.product(chars, repeat=length):
+            # Check if user clicked STOP or PAUSE
             session = cls.sessions.get(session_id)
-            if not session: break
-            if session.get('stopped'):
-                yield log_evt("🛑 Stopped.")
+            if not session or session.get('stopped'):
+                yield create_message("🛑 Attack Stopped.")
                 break
-                
+
             if session.get('paused'):
-                yield log_evt("⏸️ Paused...")
-                while True:
+                yield create_message("⏸️ Paused...")
+                while session.get('paused') and not session.get('stopped'):
                     time.sleep(0.5)
                     session = cls.sessions.get(session_id)
-                    if session is None: break
-                    if session.get('stopped') or not session.get('paused'): break
-                
-                if session is None or session.get('stopped'): break
-                yield log_evt("▶️ Resumed!")
-                start_time = time.time() - (float(attempts) / 1000000.0)
+                if not session or session.get('stopped'): break
+                yield create_message("▶️ Resumed!")
 
-            guess = "".join(guess_tuple)
+            # Convert ('a','b') tuple to "ab" string
+            guess = "".join(combination)
             attempts += 1
-            
-            if attempts <= 1000 or attempts % 100000 == 0:
-                yield log_evt(f"Attempt {attempts:,}: '{guess}'")
-                
+
+            # Log periodically so we don't slow down the computer
+            if attempts <= 100 or attempts % 100000 == 0:
+                yield create_message(f"Trying: {guess} (Attempt {attempts:,})")
+
+            # Check if we found the password
             if guess == password:
                 elapsed = time.time() - start_time
-                yield log_evt(f"✅ CRACKED! '{guess}' in {attempts} attempts.")
-                yield log_evt({'attempts': attempts, 'time': elapsed}, "done")
+                yield create_message(f"✅ SUCCESS! Found '{guess}' in {attempts} tries.")
+                yield create_message({'attempts': attempts, 'time': elapsed}, type="done")
                 break
         else:
-            yield log_evt("❌ Failed to crack.", "done")
-            
+            yield create_message("❌ Failed: Exhausted all possibilities.", type="done")
+
+        # Cleanup session
         cls.sessions.pop(session_id, None)
 
     @staticmethod
